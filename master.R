@@ -71,10 +71,5 @@ source("R/flu_cleaning.R")
 source("R/Inclusions.R") 
 
 #render Rmd files in html
-# render("R/data_analysis.Rmd", output_file = paste0("../output/",today(),"data_analysis.html"))
-# render("R/flu_effect.Rmd", output_file = paste0("../output/",today(),"flu_analysis.html"))
-render("R/PTB_brain_sparing_UCL.Rmd", output_file = paste0("../output/",today(),"PTB_brain_sparing.html"))
-render("R/first_multiv_models.Rmd", output_file = paste0("../output/",today(),"multivariate_models.html"))
-render("R/flu_effect.Rmd", output_file = paste0("../output/",today(),"flu_models.html"))
-render("R/PTB_brain_sparing_202309.Rmd", output_file = paste0("../output/",today(),"Lausanne_pregancy_outcomes_and_infections.html"))
-rmarkdown::render("R/PTB_brain_sparing_pdf.Rmd", output_file = paste0("../output/", today(), "Lausanne_pregancy_outcomes_and_infections.pdf"))
+# render("R/PTB_brain_sparing_UCL.Rmd", output_file = paste0("../output/",today(),"PTB_brain_sparing.html"))
+# rmarkdown::render("R/PTB_brain_sparing_pdf.Rmd", output_file = paste0("../output/", today(), "Lausanne_pregancy_outcomes_and_infections.pdf"))
