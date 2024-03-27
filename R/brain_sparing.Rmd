@@ -1,0 +1,2491 @@
+---
+title: "Infection during pregnancy and pregancy outcomes and anthropometrics, UCL 2023-24"
+author: "Mathilde Le Vu, Jonathan Wells, Mario Cortina-Borja"
+date: "2023-12-05"
+html_document: 
+output:
+  rmdformats::robobook:
+    code_folding: show
+    self_contained: true
+    highlight: pygments
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+# Research questions
+How are neonatal anthropometrics and pregnancy outcomes impacted by maternal infection?
+
+-> differentiate between infection types: syphilis and flu -during the pandemic will be explored.
+Because the other infections (gonorrhea and tuberculosis) occurred only rarely, we do not consider them.
+
+Thefore, we investigate only the direct effects of being infected.
+The potential indirect effect that the flu pandemic might have had on the same pregnancy outcomes will be explored in a different project (using ecological exposure to flu: number of weekly cases/mortality in the city of Lausanne as a proxy for stress exposure to the pandemic). The sex-ratio at birth (SRB) will also be explored: after a crisis (war, pandemic), the SRB has been reported to decline (meaning: less males are born) --> for flu pandemic, we hypothetize that stress exposure might have causen more miscarriages among males, potentially lowering the SRB ~9 months after the pandemic peak. 
+
+# Summary of data cleaning part
+We now have complete data 1911-1922.
+
+## Gestational age variable
+
+In the original data set we have two variables to estimate gestational age:
+
+- date of delivery- date of last period --> this variable is therefore continuous and detailed. However, this is subject to error, often the person can mistaken date of last period, and there were in many cases two different dates of last menstruation written, or question mark added. Sometimes this info is simply missing.
+
+- gestational age assessed at birth by (probably) the physician. This variable may be more reliable, but in many cases, this was qualified as "a terme", which we decided to assume meant [37-41) weeks of gestational age. 
+
+As we don't want to lose information by using only the categorical "GA assessed at birth" variable, I did the following:
+when calculated GA and assessed GA were in agreement, we keep calculated GA. Otherwise, we use assessed GA. If assessed gestational age was qualitative ("a terme"), then we took the mean of the category (for instance, for "a terme" : 37-41 weeks --> 39 weeks).
+
+Outliers for birthweight and gestational age (when there was an important discrepancy between the two variables) have now been checked and corrected with original source in the archives. For cases when neonatal sex is unclear, we are also going back at these cases.
+
+## Exclusions
+Between 1912 and 1922, there are `r dim(laus1.1)[1]` births included in our database.
+
+From this, we successively excluded:
+
+- Home births n= `r sum(laus1.1$Homebirth2 == "yes")`,
+`r round(100 * (sum(!is.na(laus1.1$Homebirth2) & laus1.1$Homebirth2 == "yes") / sum(!is.na(laus1.1$Homebirth2))), digits = 2)[1]` %. New Number of cases: `r dim(laus1.2)[1]`
+
+- Gestational age (based on variables GA_weeks) <22 (to fit today definitions of stillbirth), or birthweight <500g. 
+n= `r (dim(laus1.2)-dim(laus1.3))[1]`, `r round(100 * (dim(laus1.2) -dim(laus1.3))/dim(laus1.2), digits = 2)[1]`.
+New Number of cases: `r dim(laus1.3)[1]`
+
+- "Extreme outliers" for birthweight and head circumference based on Z-scores adjusted for sex. I have chosen the threshold of 7 Z score. We then excluded
+n= `r (dim(laus1.3)-dim(laus2))[1]`, `r round(100 * (dim(laus1.3) -dim(laus2))/dim(laus1.3), digits = 2)[1]`.
+New Number of cases: `r dim(laus2)[1]`
+
+
+## Summary of the population's characteristics
+Coding for HISCO variable:
+
+ - 1: non manual prof, higher managers/professionals. 
+ 
+ - 2: medium-skilled workers, farmers.
+ 
+ - 3: unskilled workers /farm workers.
+
+
+## Simple t- or chi2 tests for differences dpdng on infection and mat. characteristics
+```{r}
+# ps comparison not perfect because I compare the flu cases with ALL cases (ie inlc. the syphilis cases)
+t.test(laus4$age_mother ~ laus4$Flu_in_pregn_and_in_pandemic)
+t.test(laus4$age_mother ~ laus4$Syphilis_2)
+
+t.test(laus4$height ~ laus4$Flu_in_pregn_and_in_pandemic)
+t.test(laus4$height ~ laus4$Syphilis_2)
+
+t.test(laus4$waist_circ ~ laus4$Flu_in_pregn_and_in_pandemic)
+t.test(laus4$waist_circ ~ laus4$Syphilis_2)
+
+stats::chisq.test(laus4$parity_cat2, laus4$Flu_in_pregn_and_in_pandemic)
+stats::chisq.test(laus4$parity_cat2, laus4$Syphilis_2)
+
+stats::chisq.test(laus4$civil_status_cat2, laus4$Flu_in_pregn_and_in_pandemic)
+stats::chisq.test(laus4$civil_status_cat2, laus4$Syphilis_2)
+
+stats::chisq.test(laus4$Lausanne, laus4$Flu_in_pregn_and_in_pandemic)
+stats::chisq.test(laus4$Lausanne, laus4$Syphilis_2)
+
+stats::chisq.test(laus4$hisco_class_3, laus4$Flu_in_pregn_and_in_pandemic)
+stats::chisq.test(laus4$hisco_class_3, laus4$Syphilis_2)
+```
+
+
+
+## Simple t- or chi2 tests for differences dpdng on infection and neonatal outcomes
+```{r}
+# ps comparison not perfect because I compare the flu cases with ALL cases (ie inlc. the syphilis cases)
+t.test(laus4$birthweight ~ laus4$Flu_in_pregn_and_in_pandemic)
+t.test(laus4$birthweight ~ laus4$Syphilis_2)
+
+# group1 <- rnorm(7767, mean = 3192, sd = 548)  # Replace with your actual data
+# group2 <- rnorm(295, mean = 3082, sd = 583)    # Replace with your actual data
+# # Perform t-test
+# t.test(group1, group2)
+
+t.test(laus4$hc.perturbed ~ laus4$Flu_in_pregn_and_in_pandemic)
+t.test(laus4$hc.perturbed ~ laus4$Syphilis_2)
+
+stats::chisq.test(laus4$GA_weeks_cat_corrected2, laus4$Flu_in_pregn_and_in_pandemic)
+stats::chisq.test(laus4$GA_weeks_cat_corrected2, laus4$Syphilis_2)
+
+stats::chisq.test(laus4$sex, laus4$Flu_in_pregn_and_in_pandemic)
+stats::chisq.test(laus4$sex, laus4$Syphilis_2)
+
+stats::chisq.test(laus4$stillbirth, laus4$Flu_in_pregn_and_in_pandemic)
+stats::chisq.test(laus4$stillbirth, laus4$Syphilis_2)
+
+stats::chisq.test(laus4$postbirth_death, laus4$Flu_in_pregn_and_in_pandemic)
+stats::chisq.test(laus4$postbirth_death, laus4$Syphilis_2)
+
+stats::chisq.test(laus4$PTB_corrected, laus4$Flu_in_pregn_and_in_pandemic)
+stats::chisq.test(laus4$PTB_corrected, laus4$Syphilis_2)
+
+stats::chisq.test(laus4$LBW, laus4$Flu_in_pregn_and_in_pandemic)
+stats::chisq.test(laus4$LBW, laus4$Syphilis_2)
+```
+
+
+
+# Anthropometric parameters
+## Birthweight
+Both Flu and Syphilis in the same models
+#### M_BW: Livebirths
+```{r echo=TRUE}
+mod4a0<- gam(birthweight ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) + flu_or_syph+parity_cat2+sex, data=laus4_livebirths)
+
+mod4e<- gam(birthweight ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology, data=laus4_livebirths)
+  AIC(mod4e)-AIC(mod4a0) 
+  BIC(mod4e)-BIC(mod4a0) 
+# morphology improves model fit
+
+mod4f<- gam(birthweight ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2, data=laus4_livebirths)
+  summary(mod4f)
+  AIC(mod4f)-AIC(mod4e) 
+  BIC(mod4f)-BIC(mod4e) 
+# civil status improves model fit BASED ON AIC ONLY
+# BIC a bit more conservative
+  
+mod4g<- gam(birthweight ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +Lausanne, data=laus4_livebirths)
+  summary(mod4g)
+  AIC(mod4g)-AIC(mod4f)   
+  BIC(mod4g)-BIC(mod4f)   
+# Putting Lausanne variable instead of civil status improves model fit
+  
+mod4h<- gam(birthweight ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne, data=laus4_livebirths)
+  summary(mod4h)
+  AIC(mod4h)-AIC(mod4f) 
+  AIC(mod4h)-AIC(mod4g) 
+  BIC(mod4h)-BIC(mod4f) 
+  BIC(mod4h)-BIC(mod4g) 
+# Putting both civil status and Lausanne variables improve model fit, based on AIC but not on BIC.
+  
+mod4i<- gam(birthweight ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne+hisco_class_3, data=laus4_livebirths)
+  summary(mod4i)
+  AIC(mod4i)-AIC(mod4h) 
+  BIC(mod4i)-BIC(mod4h) 
+#hisco class does not improve the model fit
+  
+mod4j<- gam(birthweight ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+hisco_class_3, data=laus4_livebirths)
+  AIC(mod4j)-AIC(mod4h) 
+  BIC(mod4j)-BIC(mod4h) 
+#hisco class does not improve the model fit, Lausanne variable is better
+  
+mod4k<- gam(birthweight ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne+Goitre, data=laus4_livebirths)
+  summary(mod4k)
+  AIC(mod4k)-AIC(mod4h)
+  BIC(mod4k)-BIC(mod4h)
+  # Goitre variable does not improve the fit.
+
+mod4l<- gam(birthweight ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne+rickets, data=laus4_livebirths)
+  summary(mod4l)
+  AIC(mod4l)-AIC(mod4h)
+  BIC(mod4l)-BIC(mod4h)
+  # Rickets variable does not improve the fit
+
+# --> mod4h best model.
+M_BW <- gam(birthweight ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne, data=laus4_livebirths)
+  summary(M_BW)
+
+nobs(M_BW) #n=7926
+dim(laus4_livebirths)
+gam.check(M_BW)
+concurvity(M_BW, full=TRUE)
+
+# coll of the non-smooth variables?
+# car::vif(M_BW)
+# non_smooth_terms <- c("flu_or_syph", "parity_cat2", "sex", "morphology", "civil_status_cat2", "Lausanne")  
+# non_smooth_data <- model.matrix(M_BW)[, colnames(model.matrix(M_BW)) %in% non_smooth_terms]
+M_BWu<- glm(birthweight ~ birthdate_num +day366 + height+  age_mother +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne, data=laus4_livebirths)
+vif(M_BWu)
+```
+
+##### Summary table
+```{r}
+BW_GAM_flu_mod <- round(head(estimates_GAM_cont(M_BW),11), 2)
+BW_GAMmod <- BW_GAM_flu_mod %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+BW_GAMmod$pvalue <-  format(round(BW_GAMmod$pvalue, digits=2), nsmall=2)
+BW_GAMmod <- BW_GAMmod%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+BW_GAMmod$pvalue1 <- (ifelse(is.na(BW_GAMmod$pvalue1),    BW_GAMmod$pvalue,  BW_GAMmod$pvalue1))
+BW_GAMmod <- BW_GAMmod %>%
+  select(-one_of('pvalue'))  
+BW_GAM3 <- BW_GAMmod %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  BW_GAM3['Parameters'] <- c("intercept", 
+                            "Disease during pregnancy (ref: no)"," ", 
+                            "Parity (ref: 1)", " ", "Sex (ref: male)",
+                            "Morphology (ref: neither)", "", 
+                            "Civil status (ref: married)",
+                            "Lausanne (ref: yes)", ""
+                            )
+  BW_GAM3['category'] <- c(" ",
+                          "influenza","syphilis",  
+                            "2", ">2", "female", 
+                            "Obese", "Thin",
+                            "single or missing",
+                           "no", "unsure")
+    BW_GAM3<-BW_GAM3[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+pvalues_smooth_BW_main = summary(M_BW)
+pvalues_smooth_BW_main <- pvalues_smooth_BW_main$s.table[,4]
+pvalues_smooth_BW_main <- format(pvalues_smooth_BW_main, scientific=FALSE)
+
+pvalues_smooth_BW_main_df <- data.frame(pvalues_smooth_BW_main) %>%
+  dplyr::mutate(Parameters=c("Time", "Seasonality", "Maternal height (cm)", "Maternal years (age)")) %>%
+  rename(c(pvalue=(pvalues_smooth_BW_main)))%>%
+  mutate(pvalue=as.numeric(pvalue)) %>%
+  mutate(pvalue1=pvalue) %>%
+  add_column(beta="")%>%
+  add_column(category="")%>%
+  add_column(lci="") %>%
+  add_column(uci="")
+
+pvalues_smooth_BW_main_df$pvalue <-  format(round(pvalues_smooth_BW_main_df$pvalue, digits=2), nsmall=2)
+
+pvalues_smooth_BW_main_df <- pvalues_smooth_BW_main_df %>%
+  mutate(pvalue1=case_when((pvalue1<0.00001) ~ "<0.0001",
+                           (pvalue1<0.001)~ "<0.001",
+                           (pvalue1<0.01)~ "<0.01")) 
+
+pvalues_smooth_BW_main_df$pvalue1 <- (ifelse(is.na(pvalues_smooth_BW_main_df$pvalue1), 
+                                             pvalues_smooth_BW_main_df$pvalue, pvalues_smooth_BW_main_df$pvalue1))
+pvalues_smooth_BW_main_df <- pvalues_smooth_BW_main_df%>%
+  select(-one_of('pvalue')) %>%
+  rename("pvalue"="pvalue1") 
+
+rowinfo = c("Smooth variables", "", "", "", "", "")
+ow <- rbind(rowinfo,pvalues_smooth_BW_main_df)
+
+BW <- rbind(BW_GAM3, ow)
+
+   M_BW_gt <- BW %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci),
+                  ) %>%
+     tab_style(
+    style = list(
+      cell_fill(color = "#e0e0e0")
+    ),
+    locations = cells_body(rows=c(2,3,6,9,13,15))) %>%
+      tab_style(
+    style = list(
+      cell_fill(color = "#F2F0F0")),
+    locations = cells_body(rows=c(4,5,7,8,10,11,14,16))) %>%
+     tab_source_note(source_note = "n=7'926")  %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(rows = 12)) %>%
+  tab_options(table.width = pct(18), data_row.padding = px(2),   table.font.size = 12,
+              column_labels.font.weight = "bold",  row_group.font.weight  = "bold",
+              heading.title.font.size = 14, heading.subtitle.font.size = 14
+  )
+    M_BW_gt
+    
+BW_estimates_gt <- M_BW_gt%>%
+  gtsave(here("output/tables/BW_HC_main_models", "M_BW_gt_estimates_flu_or_syph_gt.html"))
+BW_estimates_gt <- M_BW_gt%>%
+  gtsave(here("output/tables/BW_HC_main_models", "M_BW_estimates_flu_or_syph_gt.docx"))
+```
+
+- Birthweight increases with maternal parity.
+
+- Birthweight is lower for women who are thin or single.
+
+- Flu infection during pregnancy lowers birthweight.
+
+- Women living outside of Lausanne have heavier babies.
+
+##### Graph smooth variables
+```{r include=FALSE}
+  plot_m_BW_time <- GAM_plot_function_continuous(M_BW, 1) 
+  plot_m_BW_seas <- GAM_plot_function_continuous(M_BW, 2)
+  plot_m_BW_mat_age <- GAM_plot_function_continuous(M_BW, 4)
+  plot_m_BW_height <- GAM_plot_function_continuous(M_BW, 3)
+```
+
+###### Time X birthweight
+```{r echo=FALSE}
+x_date <- laus4_livebirths %>% #careful, mayhave to change the dataset if I later work with smaller time ranges!
+    select(birthdate, birthdate_num) %>%
+    distinct(birthdate, .keep_all = TRUE) %>%
+    rename(x=birthdate_num)
+ 
+plot_data_BW <- plot_m_BW_time %>%
+    mutate(x=round(x,0)) %>%
+    left_join(x_date) %>%
+    mutate(date_x= ymd(paste0(birthdate)))
+  
+  lim1 <- as.POSIXct(ymd("1911-01-01"))
+  lim2 <- as.POSIXct(ymd("1922-12-31"))
+  
+  plot_BW_time <- ggplot(data=plot_data_BW)+
+    geom_line(aes(x=as.POSIXct(date_x),y=fit),lwd=lwdline, color=("black"))+
+    geom_ribbon(aes(x=as.POSIXct(date_x),ymin=CIl,ymax=CIu),alpha=0.15,lwd=lwdline, fill='black')+
+    xlab("Timeline (years)")+
+    ylab("Birthweight (g)")+
+    coord_cartesian(ylim=c(2800,3600)) +
+     scale_x_datetime( 
+      breaks = date_breaks("12 month"),
+                      labels = label_date_short(),
+                      limits =c(min(lim1), max(lim2)), 
+                      expand = c(0,0)) +
+    theme_bw()+
+    theme(axis.text.y=element_text(color="black",size=16), #size_axis
+          axis.text.x=element_text(color="black",size=16,angle=45,hjust=1), #size_axis
+          axis.title=element_text(size=16), #size_axis_title
+          legend.text=element_text(size=size_legend),
+          legend.title=element_text(size=size_legend_title),
+          legend.position="bottom",
+          legend.key.width = unit(1.5, "cm"), 
+          legend.key.height = unit(0.5, "cm")) +
+    theme(axis.title.x = axis.title.x.position) +
+    scale_y_continuous(breaks=seq(2800,3600,by=200)) 
+  plot_BW_time
+```
+
+###### Maternal age
+```{r}
+plot_BW_main_mat_age <- ggplot(data=plot_m_BW_mat_age)+
+  geom_line(aes(x=(x),y=fit),lwd=lwdline, color=("black"))+
+  geom_ribbon(aes(x=(x),ymin=CIl,ymax=CIu),alpha=0.15,lwd=lwdline, fill='black')+
+  xlab("Maternal age (years)")+
+  ylab("Birthweight (g)")+
+  coord_cartesian(ylim=c(2800,3600)) +
+  theme_bw()+
+    theme(axis.text.y=element_text(color="black",size=16), #size_axis
+          axis.text.x=element_text(color="black",size=16,angle=45,hjust=1.2), #size_axis
+          axis.title=element_text(size=16), #size_axis_title
+          legend.text=element_text(size=size_legend),
+          legend.title=element_text(size=size_legend_title),
+          legend.position="bottom",
+          legend.key.width = unit(1.5, "cm"), 
+          legend.key.height = unit(0.5, "cm")) +
+    theme(axis.title.x = axis.title.x.position) +
+  scale_x_continuous(breaks=seq(0,60,by=5),expand = c(0, 0)) +
+  scale_y_continuous(breaks=seq(2800,3600,by=200)) +
+theme(axis.title.x = axis.title.x.position)
+plot_BW_main_mat_age
+```
+
+###### Maternal height
+```{r}
+plot_BW_mat_height <- ggplot(data=plot_m_BW_height)+
+  geom_line(aes(x=(x),y=fit),lwd=lwdline, color=("black"))+
+  geom_ribbon(aes(x=(x),ymin=CIl,ymax=CIu),alpha=0.15,lwd=lwdline, fill='black')+
+  xlab("Maternal height (cm)")+
+  ylab("Birthweight (g)")+
+  coord_cartesian(ylim=c(2800,3600)) +
+ theme_bw()+
+    theme(axis.text.y=element_text(color="black",size=16), #size_axis
+          axis.text.x=element_text(color="black",size=16,angle=45,hjust=1.2), #size_axis
+          axis.title=element_text(size=16), #size_axis_title
+          legend.text=element_text(size=size_legend),
+          legend.title=element_text(size=size_legend_title),
+          legend.position="bottom",
+          legend.key.width = unit(1.5, "cm"), 
+          legend.key.height = unit(0.5, "cm")) +
+    theme(axis.title.x = axis.title.x.position) +
+  scale_x_continuous(breaks=seq(80,180,by=10),expand = c(0, 0)) +
+  scale_y_continuous(breaks=seq(2800,3600,by=200)) +
+theme(axis.title.x = axis.title.x.position)
+plot_BW_mat_height
+```
+
+###### Seasonality
+```{r}
+# Create a vector of month names
+month_names <- c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+plot_BW_seas <- ggplot(data = plot_m_BW_seas) +
+  geom_line(aes(x = x, y = fit), lwd = lwdline, color = "black") +
+  geom_ribbon(aes(x = x, ymin = CIl, ymax = CIu), alpha = 0.15, lwd = lwdline, fill = 'black') +
+  xlab("Seasonality (day of the year)") +
+  ylab("Birthweight (g)") +
+  coord_cartesian(ylim = c(2800, 3600)) +
+  theme_bw()+
+    theme(axis.text.y=element_text(color="black",size=16), #size_axis
+          axis.text.x=element_text(color="black",size=16,angle=45,hjust=1.2), #size_axis
+          axis.title=element_text(size=16), #size_axis_title
+          legend.text=element_text(size=size_legend),
+          legend.title=element_text(size=size_legend_title),
+          legend.position="bottom",
+          legend.key.width = unit(1.5, "cm"), 
+          legend.key.height = unit(0.5, "cm")) +
+    theme(axis.title.x = axis.title.x.position) +
+  scale_x_continuous(breaks = seq(1, 366, by = 30.5), labels = month_names,expand = c(0, 0))+
+  scale_y_continuous(breaks = seq(2800, 3600, by = 200)) +
+  theme(axis.title.x = axis.title.x.position)
+plot_BW_seas
+```
+
+###### Graph
+```{r}
+BW_figureS1 <- ggarrange(plot_BW_main_mat_age,
+                        plot_BW_mat_height,
+                        plot_BW_time,
+                        plot_BW_seas,
+                        labels = c("A", "B", "C", "D"),
+                        ncol = 2, nrow=2)
+ggsave("output/graphs/suppl_data/M_BW_birthweight_mod_smooth_var.pdf", BW_figureS1, width = 12, height = 8)
+```
+
+#### MBW.Z: Z-score
+```{r}
+M_BW.Z<- gam(Birthweight_Z ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne, data=laus4_livebirths)
+  summary(M_BW.Z)
+  gam.check(M_BW.Z)
+  concurvity(M_BW.Z)
+  nobs(M_BW.Z)
+```
+
+##### Summary table
+```{r}
+BW_GAM_flu_mod <- round(head(estimates_GAM_cont(M_BW.Z),11), 2)
+BW_GAMmod <- BW_GAM_flu_mod %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+BW_GAMmod$pvalue <-  format(round(BW_GAMmod$pvalue, digits=2), nsmall=2)
+BW_GAMmod <- BW_GAMmod%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+BW_GAMmod$pvalue1 <- (ifelse(is.na(BW_GAMmod$pvalue1),    BW_GAMmod$pvalue,  BW_GAMmod$pvalue1))
+BW_GAMmod <- BW_GAMmod %>%
+  select(-one_of('pvalue'))  
+BW_GAM3 <- BW_GAMmod %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  BW_GAM3['Parameters'] <- c("intercept", 
+                            "Disease during pregnancy (ref: no)"," ", 
+                            "Parity (ref: 1)", " ", "Sex (ref: male)",
+                            "Morphology (ref: neither)", "", 
+                            "Civil status (ref: married)",
+                            "Lausanne (ref: yes)", ""
+                            )
+  BW_GAM3['category'] <- c(" ",
+                          "influenza","syphilis",  
+                            "2", ">2", "female", 
+                            "Obese", "Thin",
+                            "single or missing",
+                           "no", "unsure")
+    BW_GAM3<-BW_GAM3[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+pvalues_smooth_BW_main = summary(M_BW.Z)
+pvalues_smooth_BW_main <- pvalues_smooth_BW_main$s.table[,4]
+pvalues_smooth_BW_main <- format(pvalues_smooth_BW_main, scientific=FALSE)
+
+pvalues_smooth_BW_main_df <- data.frame(pvalues_smooth_BW_main) %>%
+  dplyr::mutate(Parameters=c("Time", "Seasonality", "Maternal height (cm)", "Maternal years (age)")) %>%
+  rename(c(pvalue=(pvalues_smooth_BW_main)))%>%
+  mutate(pvalue=as.numeric(pvalue)) %>%
+  mutate(pvalue1=pvalue) %>%
+  add_column(beta="")%>%
+  add_column(category="")%>%
+  add_column(lci="") %>%
+  add_column(uci="")
+
+pvalues_smooth_BW_main_df$pvalue <-  format(round(pvalues_smooth_BW_main_df$pvalue, digits=2), nsmall=2)
+
+pvalues_smooth_BW_main_df <- pvalues_smooth_BW_main_df %>%
+  mutate(pvalue1=case_when((pvalue1<0.00001) ~ "<0.0001",
+                           (pvalue1<0.001)~ "<0.001",
+                           (pvalue1<0.01)~ "<0.01")) 
+
+pvalues_smooth_BW_main_df$pvalue1 <- (ifelse(is.na(pvalues_smooth_BW_main_df$pvalue1), 
+                                             pvalues_smooth_BW_main_df$pvalue, pvalues_smooth_BW_main_df$pvalue1))
+pvalues_smooth_BW_main_df <- pvalues_smooth_BW_main_df%>%
+  select(-one_of('pvalue')) %>%
+  rename("pvalue"="pvalue1") 
+
+rowinfo = c("Smooth variables", "", "", "", "", "")
+ow <- rbind(rowinfo,pvalues_smooth_BW_main_df)
+
+BW <- rbind(BW_GAM3, ow)
+
+   M_BW.Z_gt <- BW %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci),
+                  ) %>%
+     tab_style(
+    style = list(
+      cell_fill(color = "#e0e0e0")
+    ),
+    locations = cells_body(rows=c(2,3,6,9,13,15))) %>%
+      tab_style(
+    style = list(
+      cell_fill(color = "#F2F0F0")),
+    locations = cells_body(rows=c(4,5,7,8,10,11,14,16))) %>%
+     tab_source_note(source_note = "n=7'926")  %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(rows = 12)) %>%
+  tab_options(table.width = pct(25), data_row.padding = px(2),   table.font.size = 12,
+              column_labels.font.weight = "bold",  row_group.font.weight  = "bold",
+              heading.title.font.size = 14, heading.subtitle.font.size = 14
+  )
+    M_BW.Z_gt
+    
+BW_z_estimates_gt <- M_BW.Z_gt%>%
+  gtsave(here("output/tables/suppl_data", "M_BW.Z_gt_estimates_flu_or_syph_gt.html"))
+BW_z_estimates_gt <- M_BW.Z_gt%>%
+  gtsave(here("output/tables/suppl_data", "M_BW.Z_estimates_flu_or_syph_gt.docx"))
+```
+
+#### Adjusting for gestational age
+```{r}
+MBW.Z.GA2<- gam(Birthweight_Z_GA ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother)+  flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne, data=laus4_livebirths)
+  summary(MBW.Z.GA2)
+  BIC(MBW.Z.GA2)
+  gam.check(MBW.Z.GA2)
+  concurvity(MBW.Z.GA2)
+```
+
+##### Summary table
+```{r}
+BW_GAM_mod_adj_GA <- round(head(estimates_GAM_cont(MBW.Z.GA2),11), 2)
+BW_GAM_mod_adj_GA <- BW_GAM_mod_adj_GA %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+BW_GAM_mod_adj_GA$pvalue <-  format(round(BW_GAM_mod_adj_GA$pvalue, digits=2), nsmall=2)
+BW_GAM_mod_adj_GA <- BW_GAM_mod_adj_GA%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+BW_GAM_mod_adj_GA$pvalue1 <- (ifelse(is.na(BW_GAM_mod_adj_GA$pvalue1),    BW_GAM_mod_adj_GA$pvalue,  BW_GAM_mod_adj_GA$pvalue1))
+BW_GAM_mod_adj_GA <- BW_GAM_mod_adj_GA %>%
+  select(-one_of('pvalue'))  
+BW_GAM3_adj_GA <- BW_GAM_mod_adj_GA %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  BW_GAM3_adj_GA['Parameters'] <- c("intercept", 
+                            "Disease during pregnancy (ref: none)"," ",
+                           "Parity (ref: 1)", " ", "Sex (ref: male)",
+                            "Morphology (ref: neither)", "", 
+                            "Civil status (ref: married)",
+                            "Lausanne (ref: yes)", ""
+                            )
+  BW_GAM3_adj_GA['category'] <- c(" ",
+                          "influenza","syphilis",
+                            "2", ">2", "female",
+                            "Obese", "Thin",
+                            "single or missing",
+                           "no", "unsure")
+    BW_GAM3_adj_GA<-BW_GAM3_adj_GA[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+pvalues_smooth_BW_adj_GA = summary(MBW.Z.GA2)
+pvalues_smooth_BW_adj_GA <- pvalues_smooth_BW_adj_GA$s.table[,4]
+pvalues_smooth_BW_adj_GA <- format(pvalues_smooth_BW_adj_GA, scientific=FALSE)
+
+pvalues_smooth_BW_adj_GA_main_df <- data.frame(pvalues_smooth_BW_adj_GA) %>%
+  dplyr::mutate(Parameters=c("Time", "Seasonality", "Maternal height (cm)", "Maternal years (age)")) %>%
+  rename(c(pvalue=(pvalues_smooth_BW_adj_GA)))%>%
+  mutate(pvalue=as.numeric(pvalue)) %>%
+  mutate(pvalue1=pvalue) %>%
+  add_column(beta="")%>%
+  add_column(category="")%>%
+  add_column(lci="") %>%
+  add_column(uci="")
+
+pvalues_smooth_BW_adj_GA_main_df$pvalue <-  format(round(pvalues_smooth_BW_adj_GA_main_df$pvalue, digits=2), nsmall=2)
+
+pvalues_smooth_BW_adj_GA_main_df <- pvalues_smooth_BW_adj_GA_main_df %>%
+  mutate(pvalue1=case_when((pvalue1<0.00001) ~ "<0.0001",
+                           (pvalue1<0.001)~ "<0.001",
+                           (pvalue1<0.01)~ "<0.01")) 
+
+pvalues_smooth_BW_adj_GA_main_df$pvalue1 <- (ifelse(is.na(pvalues_smooth_BW_adj_GA_main_df$pvalue1), 
+                                             pvalues_smooth_BW_adj_GA_main_df$pvalue, pvalues_smooth_BW_adj_GA_main_df$pvalue1))
+pvalues_smooth_BW_adj_GA_main_df <- pvalues_smooth_BW_adj_GA_main_df%>%
+  select(-one_of('pvalue')) %>%
+  rename("pvalue"="pvalue1") 
+
+rowinfo = c("Smooth variables", "", "", "", "", "")
+ow_adj_BW_GA <- rbind(rowinfo,pvalues_smooth_BW_adj_GA_main_df)
+
+BW_adj_GA <- rbind(BW_GAM3_adj_GA, ow_adj_BW_GA)
+
+   MBW.Z.GA_gt <- BW_adj_GA %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci),
+                  ) %>%
+     tab_style(
+    style = list(
+      cell_fill(color = "#e0e0e0")
+    ),
+    locations = cells_body(rows=c(2,3,6,9,13,15))) %>%
+      tab_style(
+    style = list(
+      cell_fill(color = "#F2F0F0")),
+    locations = cells_body(rows=c(4,5,7,8,10,11,14,16))) %>%
+     tab_source_note(source_note = "n=7'909")  %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(rows = 12)) %>%
+  tab_options(table.width = pct(25), data_row.padding = px(2),   table.font.size = 12,
+              column_labels.font.weight = "bold",  row_group.font.weight  = "bold",
+              heading.title.font.size = 14, heading.subtitle.font.size = 14
+  )
+    MBW.Z.GA_gt
+    #pct 25
+BW_estimates_flu_adj_GA_gt <- MBW.Z.GA_gt%>%
+  gtsave(here("output/tables/suppl_data", "M_BW.Z.GA_estimates_flu_or_syph_adj_GA_gt.html"))
+BW_estimates_flu_adj_GA_gt <- MBW.Z.GA_gt%>%
+  gtsave(here("output/tables/suppl_data", "M_BW.Z.GA_estimates_flu_or_syph_adj_GA_gt.docx"))
+```
+
+
+#### Differentiating between live and stillbirths
+##### Syph
+```{r echo=TRUE}
+M_BW.syph.s  <- gam(birthweight ~s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) + parity_cat2+sex+ morphology  +civil_status_cat2 + Lausanne+ Syphilis_2*stillbirth, data=laus4)
+
+ ggeffects::ggemmeans(M_BW.syph.s, terms=c("stillbirth", "Syphilis_2"))
+
+pred_df_syph_stillbirth <- ggeffects::ggpredict(M_BW.syph.s, terms = c("stillbirth", "Syphilis_2"))
+pred_df_syph_stillbirth_plot <- pred_df_syph_stillbirth %>%
+  plot() + labs(y = "Birth weight (g)", x="") + 
+   ggtitle(" ")+
+   labs(color="Syphilis")+
+   scale_color_manual(values = c("blue","darkred"))+
+    theme(axis.text.x  = element_text(size = 20, colour = "black"),
+          axis.text.y  = element_text(size = 18, colour = "black"),
+          axis.title.y  = element_text(size = 20, colour = "black"),
+          legend.title = element_text(colour="black"))
+pred_df_syph_stillbirth_plot
+ggsave("output/graphs/brain_sparing/syph_birthweight_stillbirth_pred.pdf", pred_df_syph_stillbirth_plot, width = 6, height = 5)
+```
+
+##### Flu
+```{r echo=TRUE}
+M_BW.flu.s<- gam(birthweight ~s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) + parity_cat2+sex+ morphology  +civil_status_cat2 + Lausanne+ Flu_in_pregn_and_in_pandemic*stillbirth, data=laus4)
+
+ ggeffects::ggemmeans(M_BW.flu.s, terms=c("stillbirth", "Flu_in_pregn_and_in_pandemic"))
+
+pred_df_flu_stillbirth <- ggeffects::ggpredict(M_BW.flu.s, terms = c("stillbirth", "Flu_in_pregn_and_in_pandemic"))
+pred_df_flu_stillbirth_plot <- pred_df_flu_stillbirth %>%
+  plot() + labs(y = "Birth weight (g)", x="") + 
+   ggtitle(" ")+
+   labs(color="Flu")+
+    scale_color_manual(values = c("blue","darkred"))+
+    theme(axis.text.x  = element_text(size = 20, colour = "black"),
+          axis.text.y  = element_text(size = 18, colour = "black"),
+          axis.title.y  = element_text(size = 20, colour = "black"),
+          legend.title = element_text(colour="black"))
+pred_df_flu_stillbirth_plot
+ggsave("output/graphs/brain_sparing/flu_birthweight_stillbirth_pred.pdf", pred_df_flu_stillbirth_plot, width = 6, height = 5)
+```
+
+##### M_BW.s
+```{r}
+M_BW_sb<- glm(birthweight ~sex+ flu_or_syph*stillbirth , data=laus4)
+nobs(M_BW_sb) #8502
+summary(M_BW_sb)
+```
+
+###### Quick summary table
+```{r}
+BW_GAM_flu_or_syph_mod <- round((estimates_cont(M_BW_sb)[c(1,3:7),]), 2)
+BW_GAMmod <- BW_GAM_flu_or_syph_mod %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+BW_GAMmod$pvalue <-  format(round(BW_GAMmod$pvalue, digits=2), nsmall=2)
+BW_GAMmod <- BW_GAMmod%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+BW_GAMmod$pvalue1 <- (ifelse(is.na(BW_GAMmod$pvalue1),    BW_GAMmod$pvalue,  BW_GAMmod$pvalue1))
+BW_GAMmod <- BW_GAMmod %>%
+  select(-one_of('pvalue'))  
+BW_GAM3 <- BW_GAMmod %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  BW_GAM3['Parameters'] <- c("intercept", "Disease during pregnancy (ref: none)","",
+                             "Stillbirth (ref no)", "Influenza: yes * stillbirth (ref no)","Syphilis: yes * stillbirth (ref no)")
+  BW_GAM3['category'] <- c("","influenza", "syphilis","yes", "stillbirth yes","stillbirth yes")
+  BW_GAM3<-BW_GAM3[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+       
+   BW_SB_GAM_gt <- BW_GAM3 %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci))%>%
+       tab_options(table.width = pct(25), data_row.padding = px(1)) %>%
+     tab_source_note(source_note = "n=8'502")
+    BW_SB_GAM_gt
+    
+M_BW.s_estimates_flu_gt <- BW_SB_GAM_gt%>%
+  gtsave(here("output/tables/BW_HC_GA_interaction_stillbirth", "M_BW_sb_estimates_gt.html"))
+M_BW.s_estimates_flu_gt <- BW_SB_GAM_gt%>%
+  gtsave(here("output/tables/BW_HC_GA_interaction_stillbirth", "M_BW_sb_estimates_gt.docx"))
+```
+
+###### Whole summary table (for suppl. data)
+```{r}
+BW_GAM_flu_syph_mod2 <- round((estimates_cont(M_BW_sb)[c(1:7),]), 2)
+BW_GAMmod2 <- BW_GAM_flu_syph_mod2 %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+BW_GAMmod2$pvalue <-  format(round(BW_GAMmod2$pvalue, digits=2), nsmall=2)
+BW_GAMmod2 <- BW_GAMmod2%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+BW_GAMmod2$pvalue1 <- (ifelse(is.na(BW_GAMmod2$pvalue1),    BW_GAMmod2$pvalue,  BW_GAMmod2$pvalue1))
+BW_GAMmod2 <- BW_GAMmod2 %>%
+  select(-one_of('pvalue'))  
+BW_GAM3.2 <- BW_GAMmod2 %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  BW_GAM3.2['Parameters'] <- c("intercept",  "Sex (ref: male)",
+                            "Disease during pregnancy (ref: none)","",
+                             "Stillbirth (ref no)", "Influenza: yes * stillbirth (ref no)","Syphilis: yes * stillbirth (ref no)")
+  BW_GAM3.2['category'] <- c(" ", "female", 
+                            "influenza","syphilis", "yes","stillbirth yes","stillbirth yes")
+    BW_GAM3.2<-BW_GAM3.2[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+   M_BW_s_2gt <- BW_GAM3.2 %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci)) %>%
+     tab_style(
+    style = list(
+      cell_fill(color = "#e0e0e0")
+    ),
+    locations = cells_body(rows=c(2,5))) %>%
+      tab_style(
+    style = list(
+      cell_fill(color = "#F2F0F0")),
+    locations = cells_body(rows=c(3,4,6,7))) %>%
+     tab_source_note(source_note = "n=8'502")  %>%
+  tab_options(table.width = pct(30), data_row.padding = px(2),   table.font.size = 12,
+              column_labels.font.weight = "bold",  row_group.font.weight  = "bold",
+              heading.title.font.size = 14, heading.subtitle.font.size = 14
+  )
+    M_BW_s_2gt
+    #PCT 18
+M_BW_s_estimates_gt <- M_BW_s_2gt%>%
+  gtsave(here("output/tables/suppl_data/BW_HC_GA_interaction_stillbirth", "M_BW_sb_estimates_gt_full.html"))
+M_BW_s_estimates_gt <- M_BW_s_2gt%>%
+  gtsave(here("output/tables/suppl_data/BW_HC_GA_interaction_stillbirth", "M_BW_sb_estimates_gt_full.docx"))
+```
+
+##### M_BW.Z.score.stillbirth
+```{r}
+M_BW.Z_sb<- glm(Birthweight_Z ~sex+ flu_or_syph*stillbirth, data=laus4)
+nobs(M_BW.Z_sb)
+summary(M_BW.Z_sb) #n 8502
+```
+
+###### Quick summary table
+```{r}
+BW_GAM_flu_or_syph_mod <- round((estimates_cont(M_BW.Z_sb)[c(1,3:7),]), 2)
+BW_GAMmod <- BW_GAM_flu_or_syph_mod %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+BW_GAMmod$pvalue <-  format(round(BW_GAMmod$pvalue, digits=2), nsmall=2)
+BW_GAMmod <- BW_GAMmod%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+BW_GAMmod$pvalue1 <- (ifelse(is.na(BW_GAMmod$pvalue1),    BW_GAMmod$pvalue,  BW_GAMmod$pvalue1))
+BW_GAMmod <- BW_GAMmod %>%
+  select(-one_of('pvalue'))  
+BW_GAM3 <- BW_GAMmod %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  BW_GAM3['Parameters'] <- c("intercept", "Disease during pregnancy (ref: none)","",
+                             "Stillbirth (ref no)", "Influenza: yes * stillbirth (ref no)","Syphilis: yes * stillbirth (ref no)")
+  BW_GAM3['category'] <- c("","influenza", "syphilis","yes", "stillbirth yes","stillbirth yes")
+  BW_GAM3<-BW_GAM3[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+       
+   BW_SB_GAM_gt <- BW_GAM3 %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci))%>%
+       tab_options(table.width = pct(25), data_row.padding = px(1)) %>%
+     tab_source_note(source_note = "n=8'502")
+    BW_SB_GAM_gt
+    
+M_BW.s_estimates_flu_gt <- BW_SB_GAM_gt%>%
+  gtsave(here("output/tables/BW_HC_GA_interaction_stillbirth", "M_BW_Z_sb_estimates_gt.html"))
+M_BW.s_estimates_flu_gt <- BW_SB_GAM_gt%>%
+  gtsave(here("output/tables/BW_HC_GA_interaction_stillbirth", "M_BW_Z_sb_estimates_gt.docx"))
+```
+
+###### Whole summary table (for suppl. data)
+```{r}
+BW_GAM_flu_syph_mod2 <- round((estimates_cont(M_BW.Z_sb)[c(1:7),]), 2)
+BW_GAMmod2 <- BW_GAM_flu_syph_mod2 %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+BW_GAMmod2$pvalue <-  format(round(BW_GAMmod2$pvalue, digits=2), nsmall=2)
+BW_GAMmod2 <- BW_GAMmod2%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+BW_GAMmod2$pvalue1 <- (ifelse(is.na(BW_GAMmod2$pvalue1),    BW_GAMmod2$pvalue,  BW_GAMmod2$pvalue1))
+BW_GAMmod2 <- BW_GAMmod2 %>%
+  select(-one_of('pvalue'))  
+BW_GAM3.2 <- BW_GAMmod2 %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  BW_GAM3.2['Parameters'] <- c("intercept", "Sex (ref: male)",
+                           "Disease during pregnancy (ref: none)","",
+                             "Stillbirth (ref no)", "Influenza: yes * stillbirth (ref no)","Syphilis: yes * stillbirth (ref no)")
+  BW_GAM3.2['category'] <- c(" ", "female", 
+                           "influenza","syphilis", "yes","stillbirth yes","stillbirth yes")
+    BW_GAM3.2<-BW_GAM3.2[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+
+   M_BW_s_2gt <- BW_GAM3.2 %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci)) %>%
+     tab_style(
+    style = list(
+      cell_fill(color = "#e0e0e0")),
+    locations = cells_body(rows=c(2,5))) %>%
+      tab_style(
+    style = list(
+      cell_fill(color = "#F2F0F0")),
+    locations = cells_body(rows=c(3,4,6,7))) %>%
+     tab_source_note(source_note = "n=8'502")  %>%
+  tab_options(table.width = pct(30), data_row.padding = px(2),   table.font.size = 12,
+              column_labels.font.weight = "bold",  row_group.font.weight  = "bold",
+              heading.title.font.size = 14, heading.subtitle.font.size = 14
+  )
+    M_BW_s_2gt
+    #PCT 18
+M_BW_s_estimates_gt <- M_BW_s_2gt%>%
+  gtsave(here("output/tables/suppl_data/BW_HC_GA_interaction_stillbirth", "M_BW_Z_sb_estimates_gt_full.html"))
+M_BW_s_estimates_gt <- M_BW_s_2gt%>%
+  gtsave(here("output/tables/suppl_data/BW_HC_GA_interaction_stillbirth", "M_BW_Z_sb_estimates_gt_full.docx"))
+```
+
+
+##### M_BW.Z.score.GA_stillbirth
+```{r}
+M_BW_Z_GA_sb<- glm(Birthweight_Z_GA ~sex+ flu_or_syph*stillbirth, data=laus4)
+nobs(M_BW_Z_GA_sb)
+summary(M_BW_Z_GA_sb) #n 8480
+```
+
+###### Quick summary table
+```{r}
+BW_GAM_flu_or_syph_mod <- round((estimates_cont(M_BW_Z_GA_sb)[c(1,3:7),]), 2)
+BW_GAMmod <- BW_GAM_flu_or_syph_mod %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+BW_GAMmod$pvalue <-  format(round(BW_GAMmod$pvalue, digits=2), nsmall=2)
+BW_GAMmod <- BW_GAMmod%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+BW_GAMmod$pvalue1 <- (ifelse(is.na(BW_GAMmod$pvalue1),    BW_GAMmod$pvalue,  BW_GAMmod$pvalue1))
+BW_GAMmod <- BW_GAMmod %>%
+  select(-one_of('pvalue'))  
+BW_GAM3 <- BW_GAMmod %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  BW_GAM3['Parameters'] <- c("intercept", "Disease during pregnancy (ref: none)","",
+                             "Stillbirth (ref no)", "Influenza: yes * stillbirth (ref no)","Syphilis: yes * stillbirth (ref no)")
+  BW_GAM3['category'] <- c("","influenza", "syphilis","yes", "stillbirth yes","stillbirth yes")
+  BW_GAM3<-BW_GAM3[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+       
+   BW_SB_GAM_gt <- BW_GAM3 %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci))%>%
+       tab_options(table.width = pct(25), data_row.padding = px(1)) %>%
+     tab_source_note(source_note = "n=8'480")
+    BW_SB_GAM_gt
+    
+M_BW.s_estimates_flu_gt <- BW_SB_GAM_gt%>%
+  gtsave(here("output/tables/BW_HC_GA_interaction_stillbirth", "M_BW_Z_GA_sb_estimates_gt.html"))
+M_BW.s_estimates_flu_gt <- BW_SB_GAM_gt%>%
+  gtsave(here("output/tables/BW_HC_GA_interaction_stillbirth", "M_BW_Z_GA_sb_estimates_gt.docx"))
+```
+
+###### Whole summary table (for suppl. data)
+```{r}
+BW_GAM_flu_syph_mod2 <- round((estimates_cont(M_BW_Z_GA_sb)[c(1:7),]), 2)
+BW_GAMmod2 <- BW_GAM_flu_syph_mod2 %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+BW_GAMmod2$pvalue <-  format(round(BW_GAMmod2$pvalue, digits=2), nsmall=2)
+BW_GAMmod2 <- BW_GAMmod2%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+BW_GAMmod2$pvalue1 <- (ifelse(is.na(BW_GAMmod2$pvalue1),    BW_GAMmod2$pvalue,  BW_GAMmod2$pvalue1))
+BW_GAMmod2 <- BW_GAMmod2 %>%
+  select(-one_of('pvalue'))  
+BW_GAM3.2 <- BW_GAMmod2 %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  BW_GAM3.2['Parameters'] <- c("intercept", "Sex (ref: male)",
+                            "Disease during pregnancy (ref: none)","",
+                             "Stillbirth (ref no)", "Influenza: yes * stillbirth (ref no)","Syphilis: yes * stillbirth (ref no)")
+  BW_GAM3.2['category'] <- c(" ", "female", 
+                           "infuenza","syphilis", "yes","stillbirth yes","stillbirth yes")
+    BW_GAM3.2<-BW_GAM3.2[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+   M_BW_s_2gt <- BW_GAM3.2 %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci),
+                  ) %>%
+     tab_style(
+    style = list(
+      cell_fill(color = "#e0e0e0")
+    ),
+    locations = cells_body(rows=c(2,5))) %>%
+      tab_style(
+    style = list(
+      cell_fill(color = "#F2F0F0")),
+    locations = cells_body(rows=c(3,4,6,7))) %>%
+     tab_source_note(source_note = "n=8'480")  %>%
+  tab_options(table.width = pct(30), data_row.padding = px(2),   table.font.size = 12,
+              column_labels.font.weight = "bold",  row_group.font.weight  = "bold",
+              heading.title.font.size = 14, heading.subtitle.font.size = 14
+  )
+    M_BW_s_2gt
+    #PCT 18
+M_BW_s_estimates_gt <- M_BW_s_2gt%>%
+  gtsave(here("output/tables/suppl_data/BW_HC_GA_interaction_stillbirth", "M_BW_Z_GA_sb_estimates_gt_full.html"))
+M_BW_s_estimates_gt <- M_BW_s_2gt%>%
+  gtsave(here("output/tables/suppl_data/BW_HC_GA_interaction_stillbirth", "M_BW_Z_GA_sb_estimates_gt_full.docx"))
+```
+
+
+## Head circumference
+Both Flu and Syphilis in the same models
+#### M_HC : Livebirths
+```{r echo=TRUE}
+mod4a0<- gam(hc.perturbed ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) + flu_or_syph+parity_cat2+sex, data=laus4_livebirths)
+
+mod4e<- gam(hc.perturbed ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology, data=laus4_livebirths)
+  AIC(mod4e)-AIC(mod4a0) 
+  BIC(mod4e)-BIC(mod4a0) 
+# morphology improves model fit
+
+mod4f<- gam(hc.perturbed ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2, data=laus4_livebirths)
+  summary(mod4f)
+  AIC(mod4f)-AIC(mod4e) 
+  BIC(mod4f)-BIC(mod4e) 
+# civil status improves model fit (based on both BIC and AIC)
+
+mod4g<- gam(hc.perturbed ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +Lausanne, data=laus4_livebirths)
+  summary(mod4g)
+  AIC(mod4g)-AIC(mod4f)   
+  BIC(mod4g)-BIC(mod4f)   
+# Putting Lausanne variable instead of civil status Improves model fit
+  
+mod4h<- gam(hc.perturbed ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne, data=laus4_livebirths)
+  summary(mod4h)
+  AIC(mod4h)-AIC(mod4f) 
+  AIC(mod4h)-AIC(mod4g) 
+  BIC(mod4h)-BIC(mod4f) 
+  BIC(mod4h)-BIC(mod4g) 
+# Putting both civil status and Lausanne variables improve model fit, based on AIC AND on BIC.
+  
+mod4i<- gam(hc.perturbed ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne+hisco_class_3, data=laus4_livebirths)
+  summary(mod4i)
+  AIC(mod4i)-AIC(mod4h) 
+  BIC(mod4i)-BIC(mod4h) 
+#hisco class does not improve the model fit
+  
+mod4j<- gam(hc.perturbed ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+hisco_class_3, data=laus4_livebirths)
+  AIC(mod4j)-AIC(mod4h) 
+  BIC(mod4j)-BIC(mod4h) 
+#hisco class does not improve the model fit, Lausanne variable is better
+  
+mod4k<- gam(hc.perturbed ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne+Goitre, data=laus4_livebirths)
+  summary(mod4k)
+  AIC(mod4k)-AIC(mod4h)
+  BIC(mod4k)-BIC(mod4h)
+  # Goitre variable does not improve the fit.
+
+mod4l<- gam(hc.perturbed ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne+rickets, data=laus4_livebirths)
+  summary(mod4l)
+  AIC(mod4l)-AIC(mod4h)
+  BIC(mod4l)-BIC(mod4h)
+  # Rickets variable does not improve the fit (based on BIC only)
+
+# --> mod4h best model.
+m_HC<- gam(hc.perturbed ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne, data=laus4_livebirths)
+  summary(m_HC)
+gam.check(m_HC)
+concurvity(m_HC)
+summary(laus4_livebirths$hc.perturbed) #missing 32
+nobs(m_HC) #n=7899
+```
+
+##### Summary table
+```{r}
+HC_GAM_mod <- round(head(estimates_GAM_cont(m_HC),11), 2)
+HC_GAMmod <- HC_GAM_mod %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+HC_GAMmod$pvalue <-  format(round(HC_GAMmod$pvalue, digits=2), nsmall=2)
+HC_GAMmod <- HC_GAMmod%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+HC_GAMmod$pvalue1 <- (ifelse(is.na(HC_GAMmod$pvalue1),    HC_GAMmod$pvalue,  HC_GAMmod$pvalue1))
+HC_GAMmod <- HC_GAMmod %>%
+  select(-one_of('pvalue'))  
+HC_GAM3 <- HC_GAMmod %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  HC_GAM3['Parameters'] <- c("intercept", 
+                            "Disease during pregnancy (ref: no)"," ", 
+                            "Parity (ref: 1)", " ", "Sex (ref: male)",
+                            "Morphology (ref: neither)", "", 
+                            "Civil status (ref: married)",
+                            "Lausanne (ref: yes)", ""
+                            )
+  HC_GAM3['category'] <- c(" ",
+                          "influenza","syphilis",  
+                            "2", ">2", "female", 
+                            "Obese", "Thin",
+                            "single or missing",
+                           "no", "unsure")
+    HC_GAM3<-HC_GAM3[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+pvalues_smooth_HC_main = summary(m_HC)
+pvalues_smooth_HC_main <- pvalues_smooth_HC_main$s.table[,4]
+pvalues_smooth_HC_main <- format(pvalues_smooth_HC_main, scientific=FALSE)
+
+pvalues_smooth_HC_main_df <- data.frame(pvalues_smooth_HC_main) %>%
+  dplyr::mutate(Parameters=c("Time", "Seasonality", "Maternal height (cm)", "Maternal years (age)")) %>%
+  rename(c(pvalue=(pvalues_smooth_HC_main)))%>%
+  mutate(pvalue=as.numeric(pvalue)) %>%
+  mutate(pvalue1=pvalue) %>%
+  add_column(beta="")%>%
+  add_column(category="")%>%
+  add_column(lci="") %>%
+  add_column(uci="")
+
+pvalues_smooth_HC_main_df$pvalue <-  format(round(pvalues_smooth_HC_main_df$pvalue, digits=2), nsmall=2)
+
+pvalues_smooth_HC_main_df <- pvalues_smooth_HC_main_df %>%
+  mutate(pvalue1=case_when((pvalue1<0.00001) ~ "<0.0001",
+                           (pvalue1<0.001)~ "<0.001",
+                           (pvalue1<0.01)~ "<0.01")) 
+
+pvalues_smooth_HC_main_df$pvalue1 <- (ifelse(is.na(pvalues_smooth_HC_main_df$pvalue1), 
+                                             pvalues_smooth_HC_main_df$pvalue, pvalues_smooth_HC_main_df$pvalue1))
+pvalues_smooth_HC_main_df <- pvalues_smooth_HC_main_df%>%
+  select(-one_of('pvalue')) %>%
+  rename("pvalue"="pvalue1") 
+
+rowinfo = c("Smooth variables", "", "", "", "", "")
+ow <- rbind(rowinfo,pvalues_smooth_HC_main_df)
+
+HC <- rbind(HC_GAM3, ow)
+
+   M_HC_gt <- HC %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci),
+                  ) %>%
+     tab_style(
+    style = list(
+      cell_fill(color = "#e0e0e0")
+    ),
+    locations = cells_body(rows=c(2,3,6,9,13,15))) %>%
+      tab_style(
+    style = list(
+      cell_fill(color = "#F2F0F0")),
+    locations = cells_body(rows=c(4,5,7,8,10,11,14,16))) %>%
+     tab_source_note(source_note = "n=7'899")  %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(rows = 12)) %>%
+  tab_options(table.width = pct(18), data_row.padding = px(2),   table.font.size = 12,
+              column_labels.font.weight = "bold",  row_group.font.weight  = "bold",
+              heading.title.font.size = 14, heading.subtitle.font.size = 14
+  )
+    M_HC_gt
+    
+HC_estimates_flu_gt <- M_HC_gt%>%
+  gtsave(here("output/tables/BW_HC_main_models", "M_HC_estimates_flu_or_syph_gt.html"))
+HC_estimates_flu_gt <- M_HC_gt%>%
+  gtsave(here("output/tables/BW_HC_main_models", "M_HC_estimates_flu_or_syph_gt.docx"))
+```
+
+- Birthweight increases with maternal parity.
+
+- Birthweight is lower for women who are thin or single.
+
+- Flu infection during pregnancy lowers birthweight.
+
+- Women living outside of Lausanne have heavier babies.
+
+##### Graph smooth variables
+```{r include=FALSE}
+  plot_m_HC_time <- GAM_plot_function_continuous(m_HC, 1) 
+  plot_m_HC_seas <- GAM_plot_function_continuous(m_HC, 2)
+  plot_m_HC_mat_age <- GAM_plot_function_continuous(m_HC, 4)
+  plot_m_HC_height <- GAM_plot_function_continuous(m_HC, 3)
+```
+
+###### Time X HC
+```{r echo=FALSE}
+x_date <- laus4_livebirths %>% #careful, mayhave to change the dataset if I later work with smaller time ranges!
+    select(birthdate, birthdate_num) %>%
+    distinct(birthdate, .keep_all = TRUE) %>%
+    rename(x=birthdate_num)
+ 
+plot_data_HC <- plot_m_HC_time %>%
+    mutate(x=round(x,0)) %>%
+    left_join(x_date) %>%
+    mutate(date_x= ymd(paste0(birthdate)))
+  
+  lim1 <- as.POSIXct(ymd("1911-01-01"))
+  lim2 <- as.POSIXct(ymd("1922-12-31"))
+  
+  plot_HC_time <- ggplot(data=plot_data_HC)+
+    geom_line(aes(x=as.POSIXct(date_x),y=fit),lwd=lwdline, color=("black"))+
+    geom_ribbon(aes(x=as.POSIXct(date_x),ymin=CIl,ymax=CIu),alpha=0.15,lwd=lwdline, fill='black')+
+    xlab("Timeline (years)")+
+    ylab("Head circumference (cm)")+
+    coord_cartesian(ylim=c(33,36)) +
+     scale_x_datetime( 
+      breaks = date_breaks("12 month"),
+                      labels = label_date_short(),
+                      limits =c(min(lim1), max(lim2)), 
+                      expand = c(0,0)) +
+    theme_bw()+
+    theme(axis.text.y=element_text(color="black",size=16), #size_axis
+          axis.text.x=element_text(color="black",size=16,angle=45,hjust=1), #size_axis
+          axis.title=element_text(size=16), #size_axis_title
+          legend.text=element_text(size=size_legend),
+          legend.title=element_text(size=size_legend_title),
+          legend.position="bottom",
+          legend.key.width = unit(1.5, "cm"), 
+          legend.key.height = unit(0.5, "cm")) +
+    theme(axis.title.x = axis.title.x.position) +
+    scale_y_continuous(breaks=seq(33,36,by=1)) 
+  plot_HC_time
+```
+
+###### Maternal age
+```{r}
+plot_HC_main_mat_age <- ggplot(data=plot_m_HC_mat_age)+
+  geom_line(aes(x=(x),y=fit),lwd=lwdline, color=("black"))+
+  geom_ribbon(aes(x=(x),ymin=CIl,ymax=CIu),alpha=0.15,lwd=lwdline, fill='black')+
+  xlab("Maternal age (years)")+
+    ylab("Head circumference (cm)")+
+    coord_cartesian(ylim=c(33,36)) +
+  theme_bw()+
+    theme(axis.text.y=element_text(color="black",size=16), #size_axis
+          axis.text.x=element_text(color="black",size=16,angle=45,hjust=1.2), #size_axis
+          axis.title=element_text(size=16), #size_axis_title
+          legend.text=element_text(size=size_legend),
+          legend.title=element_text(size=size_legend_title),
+          legend.position="bottom",
+          legend.key.width = unit(1.5, "cm"), 
+          legend.key.height = unit(0.5, "cm")) +
+    theme(axis.title.x = axis.title.x.position) +
+  scale_x_continuous(breaks=seq(0,60,by=5),expand = c(0, 0)) +
+    scale_y_continuous(breaks=seq(33,36,by=1)) +
+theme(axis.title.x = axis.title.x.position)
+plot_HC_main_mat_age
+```
+
+###### Maternal height
+```{r}
+plot_HC_mat_height <- ggplot(data=plot_m_HC_height)+
+  geom_line(aes(x=(x),y=fit),lwd=lwdline, color=("black"))+
+  geom_ribbon(aes(x=(x),ymin=CIl,ymax=CIu),alpha=0.15,lwd=lwdline, fill='black')+
+  xlab("Maternal height (cm)")+
+    ylab("Head circumference (cm)")+
+    coord_cartesian(ylim=c(33,36)) +
+ theme_bw()+
+    theme(axis.text.y=element_text(color="black",size=16), #size_axis
+          axis.text.x=element_text(color="black",size=16,angle=45,hjust=1.2), #size_axis
+          axis.title=element_text(size=16), #size_axis_title
+          legend.text=element_text(size=size_legend),
+          legend.title=element_text(size=size_legend_title),
+          legend.position="bottom",
+          legend.key.width = unit(1.5, "cm"), 
+          legend.key.height = unit(0.5, "cm")) +
+    theme(axis.title.x = axis.title.x.position) +
+  scale_x_continuous(breaks=seq(80,180,by=10),expand = c(0, 0)) +
+    scale_y_continuous(breaks=seq(33,36,by=1)) +
+theme(axis.title.x = axis.title.x.position)
+plot_HC_mat_height
+```
+
+###### Seasonality
+```{r}
+month_names <- c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+plot_HC_seas <- ggplot(data = plot_m_HC_seas) +
+  geom_line(aes(x = x, y = fit), lwd = lwdline, color = "black") +
+  geom_ribbon(aes(x = x, ymin = CIl, ymax = CIu), alpha = 0.15, lwd = lwdline, fill = 'black') +
+  xlab("Seasonality (day of the year)") +
+    ylab("Head circumference (cm)")+
+    coord_cartesian(ylim=c(33,36)) +
+  theme_bw()+
+    theme(axis.text.y=element_text(color="black",size=16), #size_axis
+          axis.text.x=element_text(color="black",size=16,angle=45,hjust=1.2), #size_axis
+          axis.title=element_text(size=16), #size_axis_title
+          
+          legend.text=element_text(size=size_legend),
+          legend.title=element_text(size=size_legend_title),
+          legend.position="bottom",
+          legend.key.width = unit(1.5, "cm"), 
+          legend.key.height = unit(0.5, "cm")) +
+    theme(axis.title.x = axis.title.x.position) +
+  scale_x_continuous(breaks = seq(1, 366, by = 30.5), labels = month_names,expand = c(0, 0))+
+    scale_y_continuous(breaks=seq(33,36,by=1)) +
+  theme(axis.title.x = axis.title.x.position)
+plot_HC_seas
+```
+
+###### Graph
+```{r}
+HC_figureS2 <- ggarrange(plot_HC_main_mat_age,
+                        plot_HC_mat_height,
+                        plot_HC_time,
+                        plot_HC_seas,
+                        labels = c("A", "B", "C", "D"),
+                        ncol = 2, nrow=2)
+ggsave("output/graphs/suppl_data/M_HC_mod_smooth_var.pdf", HC_figureS2, width = 12, height = 8)
+```
+
+##### Into volume
+V=(4/3) × ?? × (circumference / (2 × ??))³
+
+<!-- -	Relative to an average birth weight of 3200g, flu reduces it by 3.3%, syphilis by 7.7% -->
+-	Relative to an average head volume of 699.2cm3, calculated from average head girth of 34.59503 cm, flu reduces it by 1.9%, syphilis by 9.8%
+
+```{r}
+# In circumference its is a reduction of 
+100* (-0.22/34.58)
+# 0.64% for flu infection
+100* (-1.21/34.58)
+# 3.50% for syphilis infection
+
+#  Normal volume (intercept)
+(4/3) * pi * (34.58/ (2 * pi))^3
+# -> 698.2709 cm3 
+
+(4/3) * pi * ((34.58-0.22) / (2 * pi))^3
+# -> 685.0282 cm3, 
+100*(698.2709-685.0282)/698.2709
+# ie reduction of 1.90% in brain size
+
+(4/3) * pi * ((34.58-1.21) / (2 * pi))^3
+# -> 627.5056 cm3
+100*(698.2709-627.5056)/698.2709
+# ie reduction of 10.13% in brain size
+```
+
+#### MHC.Z: Z-score
+```{r}
+M_HC.Z<- gam(head_circ_perturb_Z ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne, data=laus4_livebirths)
+gam.check(M_HC.Z)
+concurvity(M_HC.Z)
+nobs(M_HC.Z)
+```
+
+##### Summary table
+```{r}
+HC_GAM_mod <- round(head(estimates_GAM_cont(M_HC.Z),11), 2)
+HC_GAMmod <- HC_GAM_mod %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+HC_GAMmod$pvalue <-  format(round(HC_GAMmod$pvalue, digits=2), nsmall=2)
+HC_GAMmod <- HC_GAMmod%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+HC_GAMmod$pvalue1 <- (ifelse(is.na(HC_GAMmod$pvalue1),    HC_GAMmod$pvalue,  HC_GAMmod$pvalue1))
+HC_GAMmod <- HC_GAMmod %>%
+  select(-one_of('pvalue'))  
+HC_GAM3 <- HC_GAMmod %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  HC_GAM3['Parameters'] <- c("intercept", 
+                            "Disease during pregnancy (ref: none)"," ", 
+                            "Parity (ref: 1)", " ", "Sex (ref: male)",
+                            "Morphology (ref: neither)", "", 
+                            "Civil status (ref: married)",
+                            "Lausanne (ref: yes)", ""
+                            )
+  HC_GAM3['category'] <- c(" ",
+                          "influenza","syphilis",  
+                            "2", ">2", "female", 
+                            "Obese", "Thin",
+                            "single or missing",
+                           "no", "unsure")
+    HC_GAM3<-HC_GAM3[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+pvalues_smooth_HC_main = summary(M_HC.Z)
+pvalues_smooth_HC_main <- pvalues_smooth_HC_main$s.table[,4]
+pvalues_smooth_HC_main <- format(pvalues_smooth_HC_main, scientific=FALSE)
+
+pvalues_smooth_HC_main_df <- data.frame(pvalues_smooth_HC_main) %>%
+  dplyr::mutate(Parameters=c("Time", "Seasonality", "Maternal height (cm)", "Maternal years (age)")) %>%
+  rename(c(pvalue=(pvalues_smooth_HC_main)))%>%
+  mutate(pvalue=as.numeric(pvalue)) %>%
+  mutate(pvalue1=pvalue) %>%
+  add_column(beta="")%>%
+  add_column(category="")%>%
+  add_column(lci="") %>%
+  add_column(uci="")
+
+pvalues_smooth_HC_main_df$pvalue <-  format(round(pvalues_smooth_HC_main_df$pvalue, digits=2), nsmall=2)
+
+pvalues_smooth_HC_main_df <- pvalues_smooth_HC_main_df %>%
+  mutate(pvalue1=case_when((pvalue1<0.00001) ~ "<0.0001",
+                           (pvalue1<0.001)~ "<0.001",
+                           (pvalue1<0.01)~ "<0.01")) 
+
+pvalues_smooth_HC_main_df$pvalue1 <- (ifelse(is.na(pvalues_smooth_HC_main_df$pvalue1), 
+                                             pvalues_smooth_HC_main_df$pvalue, pvalues_smooth_HC_main_df$pvalue1))
+pvalues_smooth_HC_main_df <- pvalues_smooth_HC_main_df%>%
+  select(-one_of('pvalue')) %>%
+  rename("pvalue"="pvalue1") 
+
+rowinfo = c("Smooth variables", "", "", "", "", "")
+ow <- rbind(rowinfo,pvalues_smooth_HC_main_df)
+
+HC <- rbind(HC_GAM3, ow)
+
+   M_HC.Z_gt <- HC %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci),
+                  ) %>%
+     tab_style(
+    style = list(
+      cell_fill(color = "#e0e0e0")
+    ),
+    locations = cells_body(rows=c(2,3,6,9,13,15))) %>%
+      tab_style(
+    style = list(
+      cell_fill(color = "#F2F0F0")),
+    locations = cells_body(rows=c(4,5,7,8,10,11,14,16))) %>%
+     tab_source_note(source_note = "n=7'899")  %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(rows = 12)) %>%
+  tab_options(table.width = pct(25), data_row.padding = px(2),   table.font.size = 12,
+              column_labels.font.weight = "bold",  row_group.font.weight  = "bold",
+              heading.title.font.size = 14, heading.subtitle.font.size = 14
+  )
+    M_HC.Z_gt
+    
+HC_z_estimates_flu_gt <- M_HC.Z_gt%>%
+  gtsave(here("output/tables/suppl_data", "M_HC.Z_estimates_flu_or_syph_gt.html"))
+HC_z_estimates_flu_gt <- M_HC.Z_gt%>%
+  gtsave(here("output/tables/suppl_data", "M_HC.Z_estimates_flu_or_syph_gt.docx"))
+```
+
+#### Adjusting for gestational age
+```{r}
+MHC.Z.GA2 <- gam(head_circ_perturb_Z_GA ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother)+flu_or_syph +parity_cat2+sex+morphology +civil_status_cat2+Lausanne, data=laus4_livebirths)
+  summary(MHC.Z.GA2)
+  # set.seed(1234)
+  # gam.check(MHC.Z.GA, k.rep=2000)
+gam.check(MHC.Z.GA2) 
+concurvity(MHC.Z.GA2)
+ BIC(MHC.Z.GA2)
+ nobs(MHC.Z.GA2)
+```
+
+##### Summary table
+```{r}
+HC_GAM_mod_adj_GA <- round(head(estimates_GAM_cont(MHC.Z.GA2),11), 2)
+HC_GAMmod_adj_GA <- HC_GAM_mod_adj_GA %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+HC_GAMmod_adj_GA$pvalue <-  format(round(HC_GAMmod_adj_GA$pvalue, digits=2), nsmall=2)
+HC_GAMmod_adj_GA <- HC_GAMmod_adj_GA%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+HC_GAMmod_adj_GA$pvalue1 <- (ifelse(is.na(HC_GAMmod_adj_GA$pvalue1),    HC_GAMmod_adj_GA$pvalue,  HC_GAMmod_adj_GA$pvalue1))
+HC_GAMmod_adj_GA <- HC_GAMmod_adj_GA %>%
+  select(-one_of('pvalue'))  
+HC_GAM3_adj_GA <- HC_GAMmod_adj_GA %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  HC_GAM3_adj_GA['Parameters'] <- c("intercept", 
+                            "Disease during pregnancy (ref: none)"," ",
+                            "Parity (ref: 1)", " ", "Sex (ref: male)",
+                            "Morphology (ref: neither)", "", 
+                            "Civil status (ref: married)",
+                            "Lausanne (ref: yes)", ""
+                            )
+  HC_GAM3_adj_GA['category'] <- c(" ",
+                          "influenza","syphilis",
+                            "2", ">2", "female", 
+                            "Obese", "Thin",
+                            "single or missing",
+                           "no", "unsure")
+    HC_GAM3_adj_GA<-HC_GAM3_adj_GA[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+pvalues_smooth_HC_adj_GA = summary(MHC.Z.GA2)
+pvalues_smooth_HC_adj_GA <- pvalues_smooth_HC_adj_GA$s.table[,4]
+pvalues_smooth_HC_adj_GA <- format(pvalues_smooth_HC_adj_GA, scientific=FALSE)
+
+pvalues_smooth_HC_adj_GA_main_df <- data.frame(pvalues_smooth_HC_adj_GA) %>%
+  dplyr::mutate(Parameters=c("Time", "Seasonality", "Maternal height (cm)", "Maternal years (age)")) %>%
+  rename(c(pvalue=(pvalues_smooth_HC_adj_GA)))%>%
+  mutate(pvalue=as.numeric(pvalue)) %>%
+  mutate(pvalue1=pvalue) %>%
+  add_column(beta="")%>%
+  add_column(category="")%>%
+  add_column(lci="") %>%
+  add_column(uci="")
+
+pvalues_smooth_HC_adj_GA_main_df$pvalue <-  format(round(pvalues_smooth_HC_adj_GA_main_df$pvalue, digits=2), nsmall=2)
+
+pvalues_smooth_HC_adj_GA_main_df <- pvalues_smooth_HC_adj_GA_main_df %>%
+  mutate(pvalue1=case_when((pvalue1<0.00001) ~ "<0.0001",
+                           (pvalue1<0.001)~ "<0.001",
+                           (pvalue1<0.01)~ "<0.01")) 
+
+pvalues_smooth_HC_adj_GA_main_df$pvalue1 <- (ifelse(is.na(pvalues_smooth_HC_adj_GA_main_df$pvalue1), 
+                                             pvalues_smooth_HC_adj_GA_main_df$pvalue, pvalues_smooth_HC_adj_GA_main_df$pvalue1))
+pvalues_smooth_HC_adj_GA_main_df <- pvalues_smooth_HC_adj_GA_main_df%>%
+  select(-one_of('pvalue')) %>%
+  rename("pvalue"="pvalue1") 
+
+rowinfo = c("Smooth variables", "", "", "", "", "")
+ow_adj_GA <- rbind(rowinfo,pvalues_smooth_HC_adj_GA_main_df)
+
+HC_adj_GA <- rbind(HC_GAM3_adj_GA, ow_adj_GA)
+
+   MHC.Z.GA_gt <- HC_adj_GA %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci),
+                  ) %>%
+     tab_style(
+    style = list(
+      cell_fill(color = "#e0e0e0")
+    ),
+    locations = cells_body(rows=c(2,3,6,9,13,15))) %>%
+      tab_style(
+    style = list(
+      cell_fill(color = "#F2F0F0")),
+    locations = cells_body(rows=c(4,5,7,8,10,11,14,16))) %>%
+     tab_source_note(source_note = "n=7'880")  %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(rows = 12)) %>%
+  tab_options(table.width = pct(18), data_row.padding = px(2),   table.font.size = 12,
+              column_labels.font.weight = "bold",  row_group.font.weight  = "bold",
+              heading.title.font.size = 14, heading.subtitle.font.size = 14
+  )
+    MHC.Z.GA_gt
+    
+HC_estimates_flu_adj_GA_gt <- MHC.Z.GA_gt%>%
+  gtsave(here("output/tables/suppl_data", "M_HC.Z.GA_estimates_flu_or_syph_adj_GA_gt.html"))
+HC_estimates_flu_adj_GA_gt <- MHC.Z.GA_gt%>%
+  gtsave(here("output/tables/suppl_data", "M_HC.Z.GA_estimates_flu_or_syph_adj_GA_gt.docx"))
+```
+
+#### Differentiating between live and stillbirths
+##### Syphilis
+```{r echo=TRUE}
+M_HC.syph.s <- gam(hc.perturbed ~s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) + parity_cat2+sex+ morphology  +civil_status_cat2 + Lausanne+ Syphilis_2*stillbirth, data=laus4)
+ ggeffects::ggemmeans(M_HC.syph.s, terms=c("stillbirth", "Syphilis_2"))
+
+pred_df_syph_stillbirth <- ggeffects::ggpredict(M_HC.syph.s, terms = c("stillbirth", "Syphilis_2"))
+pred_df_syph_stillbirth_plot <- pred_df_syph_stillbirth %>%
+  plot() + labs(y = "head circumference (cm)", x="") + 
+   ggtitle(" ")+
+   labs(color="Syphilis")+
+      scale_color_manual(values = c("blue","darkred"))+
+   theme(axis.text.x  = element_text(size = 20, colour = "black"),
+          axis.text.y  = element_text(size = 18, colour = "black"),
+          axis.title.y  = element_text(size = 20, colour = "black"),
+          legend.title = element_text(colour="black"))
+pred_df_syph_stillbirth_plot
+ggsave("output/graphs/brain_sparing/syph_hc_stillbirth_pred.pdf", pred_df_syph_stillbirth_plot, width = 6, height = 5)
+```
+
+##### Flu
+```{r echo=TRUE}
+M_HC.flu.s <- gam(hc.perturbed ~s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) + parity_cat2+sex+ morphology  +civil_status_cat2 + Lausanne+ Flu_in_pregn_and_in_pandemic*stillbirth, data=laus4)
+
+ ggeffects::ggemmeans(M_HC.flu.s, terms=c("stillbirth", "Flu_in_pregn_and_in_pandemic"))
+
+pred_df_flu_stillbirth <- ggeffects::ggpredict(M_HC.flu.s, terms = c("stillbirth", "Flu_in_pregn_and_in_pandemic"))
+pred_df_flu_stillbirth_plot <- pred_df_flu_stillbirth %>%
+  plot() + labs(y = "Head circumference (cm)", x="") + 
+   ggtitle(" ")+
+   labs(color="Flu")+
+    scale_color_manual(values = c("blue","darkred"))+
+    theme(axis.text.x  = element_text(size = 20, colour = "black"),
+          axis.text.y  = element_text(size = 18, colour = "black"),
+          axis.title.y  = element_text(size = 20, colour = "black"),
+          legend.title = element_text(colour="black"))
+pred_df_flu_stillbirth_plot
+ggsave("output/graphs/brain_sparing/flu_head_circ_stillbirth_pred.pdf", pred_df_flu_stillbirth_plot, width = 6, height = 5)
+```
+
+##### M_HC.s
+```{r}
+M_HC_sb <- glm(hc.perturbed ~ sex+ flu_or_syph*stillbirth, data=laus4)
+summary(M_HC_sb)
+nobs(M_HC_sb)#n 8'367
+```
+
+###### Quick summary table
+```{r}
+HC_GAM_syph_flu_mod <- round((estimates_cont(M_HC_sb)[c(1,3:7),]), 2)
+HC_GAMmod <- HC_GAM_syph_flu_mod %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+HC_GAMmod$pvalue <-  format(round(HC_GAMmod$pvalue, digits=2), nsmall=2)
+HC_GAMmod <- HC_GAMmod%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+HC_GAMmod$pvalue1 <- (ifelse(is.na(HC_GAMmod$pvalue1),    HC_GAMmod$pvalue,  HC_GAMmod$pvalue1))
+HC_GAMmod <- HC_GAMmod %>%
+  select(-one_of('pvalue'))  
+HC_GAM3 <- HC_GAMmod %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  HC_GAM3['Parameters'] <- c("intercept", 
+                             "Disease during pregnancy (ref: none)", 
+                             " ",
+                             "Stillbirth (ref no)", "Influenza: yes * stillbirth (ref no)", "Syphilis: yes * stillbirth (ref no)")
+  HC_GAM3['category'] <- c("","influenza", "syphilis", "yes","stillbirth yes","stillbirth yes")
+  HC_GAM3<-HC_GAM3[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+   HC_SB_GAM_flu_syph_gt <- HC_GAM3 %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci))%>%
+       tab_options(table.width = pct(25), data_row.padding = px(1)) %>%
+     tab_source_note(source_note = "n=8'367")
+    HC_SB_GAM_flu_syph_gt
+    # pct 20
+HC_estimates_flu_gt <- HC_SB_GAM_flu_syph_gt%>%
+  gtsave(here("output/tables/BW_HC_GA_interaction_stillbirth", "M_HC_sb_gt_estimates.html"))
+HC_estimates_flu_gt <- HC_SB_GAM_flu_syph_gt%>%
+  gtsave(here("output/tables/BW_HC_GA_interaction_stillbirth", "M_HC_sb_gt_estimates.docx"))
+```
+
+###### Whole summary table (for suppl. data)
+```{r}
+HC_GAM_flu_syph_mod2 <- round((estimates_cont(M_HC_sb)[c(1:7),]), 2)
+HC_GAMmod2 <- HC_GAM_flu_syph_mod2 %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+HC_GAMmod2$pvalue <-  format(round(HC_GAMmod2$pvalue, digits=2), nsmall=2)
+HC_GAMmod2 <- HC_GAMmod2%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+HC_GAMmod2$pvalue1 <- (ifelse(is.na(HC_GAMmod2$pvalue1), HC_GAMmod2$pvalue, HC_GAMmod2$pvalue1))
+HC_GAMmod2 <- HC_GAMmod2 %>%
+  select(-one_of('pvalue'))  
+HC_GAM3.2 <- HC_GAMmod2 %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  HC_GAM3.2['Parameters'] <- c("intercept", 
+                            "Sex (ref: male)",
+                             "Disease during pregnancy (ref: none)", 
+                             " ",
+                             "Stillbirth (ref no)", "Influenza: yes * stillbirth (ref no)",
+                            "Syphilis: yes * stillbirth (ref no)")
+  HC_GAM3.2['category'] <- c(" ","female", 
+                            "influenza", "syphilis", "yes",
+                           "stillbirth yes", "stillbirth yes")
+    HC_GAM3.2<-HC_GAM3.2[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+
+  M_HC.s_gt <- HC_GAM3.2 %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci),) %>%
+     tab_style(
+    style = list(
+      cell_fill(color = "#e0e0e0")),
+    locations = cells_body(rows=c(2,5))) %>%
+      tab_style(
+    style = list(
+      cell_fill(color = "#F2F0F0")),
+    locations = cells_body(rows=c(3,4,6,7))) %>%
+     tab_source_note(source_note = "n=8'367")  %>%
+  tab_options(table.width = pct(30), data_row.padding = px(2),   table.font.size = 12,
+              column_labels.font.weight = "bold",  row_group.font.weight  = "bold",
+              heading.title.font.size = 14, heading.subtitle.font.size = 14
+  )
+    M_HC.s_gt
+   #pct18 
+hc_estimates_2_gt <- M_HC.s_gt%>%
+  gtsave(here("output/tables/suppl_data/BW_HC_GA_interaction_stillbirth", "M_HC_sb_estimates_gt_full.html"))
+hc_estimates_2_gt <- M_HC.s_gt%>%
+  gtsave(here("output/tables/suppl_data/BW_HC_GA_interaction_stillbirth", "M_HC_sb_estimates_gt_full.docx"))
+```
+
+##### M_HC_Z.score.stillbirth
+```{r}
+M_HC_Z_sb <- glm(head_circ_perturb_Z ~sex+ flu_or_syph*stillbirth, data=laus4)
+summary(M_HC_Z_sb)
+nobs(M_HC_Z_sb) # n 8367
+```
+
+###### Quick summary table
+```{r}
+HC_GAM_syph_flu_mod <- round((estimates_cont(M_HC_Z_sb)[c(1,3:7),]), 2)
+HC_GAMmod <- HC_GAM_syph_flu_mod %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+HC_GAMmod$pvalue <-  format(round(HC_GAMmod$pvalue, digits=2), nsmall=2)
+HC_GAMmod <- HC_GAMmod%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+HC_GAMmod$pvalue1 <- (ifelse(is.na(HC_GAMmod$pvalue1),    HC_GAMmod$pvalue,  HC_GAMmod$pvalue1))
+HC_GAMmod <- HC_GAMmod %>%
+  select(-one_of('pvalue'))  
+HC_GAM3 <- HC_GAMmod %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  HC_GAM3['Parameters'] <- c("intercept", 
+                             "Disease during pregnancy (ref: none)", 
+                             " ",
+                             "Stillbirth (ref no)", "Influenza: yes * stillbirth (ref no)", "Syphilis: yes * stillbirth (ref no)")
+  HC_GAM3['category'] <- c("","influenza", "syphilis", "yes","stillbirth yes","stillbirth yes")
+  HC_GAM3<-HC_GAM3[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+   HC_SB_GAM_flu_syph_gt <- HC_GAM3 %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci))%>%
+       tab_options(table.width = pct(25), data_row.padding = px(1)) %>%
+     tab_source_note(source_note = "n=8'367")
+    HC_SB_GAM_flu_syph_gt
+    # pct 20
+HC_estimates_flu_gt <- HC_SB_GAM_flu_syph_gt%>%
+  gtsave(here("output/tables/BW_HC_GA_interaction_stillbirth", "M_HC_Z_sb_gt_estimates.html"))
+HC_estimates_flu_gt <- HC_SB_GAM_flu_syph_gt%>%
+  gtsave(here("output/tables/BW_HC_GA_interaction_stillbirth", "M_HC_Z_sb_gt_estimates.docx"))
+```
+
+###### Whole summary table (for suppl. data)
+```{r}
+HC_GAM_flu_syph_mod2 <- round((estimates_cont(M_HC_Z_sb)[c(1:7),]), 2)
+HC_GAMmod2 <- HC_GAM_flu_syph_mod2 %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+HC_GAMmod2$pvalue <-  format(round(HC_GAMmod2$pvalue, digits=2), nsmall=2)
+HC_GAMmod2 <- HC_GAMmod2%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+HC_GAMmod2$pvalue1 <- (ifelse(is.na(HC_GAMmod2$pvalue1), HC_GAMmod2$pvalue, HC_GAMmod2$pvalue1))
+HC_GAMmod2 <- HC_GAMmod2 %>%
+  select(-one_of('pvalue'))  
+HC_GAM3.2 <- HC_GAMmod2 %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  HC_GAM3.2['Parameters'] <- c("intercept", 
+                            "Sex (ref: male)",
+                           "Disease during pregnancy (ref: none)", 
+                             " ",
+                             "Stillbirth (ref no)", "Influenza: yes * stillbirth (ref no)",
+                            "Syphilis: yes * stillbirth (ref no)")
+  HC_GAM3.2['category'] <- c(" ",
+                            "female", 
+                            "influenza", "syphilis", "yes",
+                           "stillbirth yes", "stillbirth yes")
+    HC_GAM3.2<-HC_GAM3.2[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+  M_HC.s_gt <- HC_GAM3.2 %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci),
+                  ) %>%
+     tab_style(
+    style = list(
+      cell_fill(color = "#e0e0e0")),
+    locations = cells_body(rows=c(2,5))) %>%
+      tab_style(
+    style = list(
+      cell_fill(color = "#F2F0F0")),
+    locations = cells_body(rows=c(3,4,6,7))) %>%
+     tab_source_note(source_note = "n=8'367")  %>%
+  tab_options(table.width = pct(30), data_row.padding = px(2),   table.font.size = 12,
+              column_labels.font.weight = "bold",  row_group.font.weight  = "bold",
+              heading.title.font.size = 14, heading.subtitle.font.size = 14
+  )
+    M_HC.s_gt
+   #pct18 
+hc_estimates_2_gt <- M_HC.s_gt%>%
+  gtsave(here("output/tables/suppl_data/BW_HC_GA_interaction_stillbirth", "M_HC_Z_sb_estimates_gt_full.html"))
+hc_estimates_2_gt <- M_HC.s_gt%>%
+  gtsave(here("output/tables/suppl_data/BW_HC_GA_interaction_stillbirth", "M_HC_Z_sb_estimates_gt_full.docx"))
+```
+
+
+##### M_HC_Z.score_GA_stillbirth
+```{r}
+M_HC_Z_GA_sb <- glm(head_circ_perturb_Z_GA ~sex+ flu_or_syph*stillbirth, data=laus4)
+summary(M_HC_Z_GA_sb)
+nobs(M_HC_Z_GA_sb)#n 8'344
+```
+
+###### Quick summary table
+```{r}
+HC_GAM_syph_flu_mod <- round((estimates_cont(M_HC_Z_GA_sb)[c(1,3:7),]), 2)
+HC_GAMmod <- HC_GAM_syph_flu_mod %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+HC_GAMmod$pvalue <-  format(round(HC_GAMmod$pvalue, digits=2), nsmall=2)
+HC_GAMmod <- HC_GAMmod%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+HC_GAMmod$pvalue1 <- (ifelse(is.na(HC_GAMmod$pvalue1),    HC_GAMmod$pvalue,  HC_GAMmod$pvalue1))
+HC_GAMmod <- HC_GAMmod %>%
+  select(-one_of('pvalue'))  
+HC_GAM3 <- HC_GAMmod %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  HC_GAM3['Parameters'] <- c("intercept", 
+                             "Disease during pregnancy (ref: none)", 
+                             " ",
+                             "Stillbirth (ref no)", "Influenza: yes * stillbirth (ref no)", "Syphilis: yes * stillbirth (ref no)")
+  HC_GAM3['category'] <- c("","influenza", "syphilis", "yes","stillbirth yes","stillbirth yes")
+  HC_GAM3<-HC_GAM3[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+   HC_SB_GAM_flu_syph_gt <- HC_GAM3 %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci))%>%
+       tab_options(table.width = pct(25), data_row.padding = px(1)) %>%
+     tab_source_note(source_note = "n=8'344")
+    HC_SB_GAM_flu_syph_gt
+    # pct 20
+HC_estimates_flu_gt <- HC_SB_GAM_flu_syph_gt%>%
+  gtsave(here("output/tables/BW_HC_GA_interaction_stillbirth", "M_HC_Z_GA_sb_gt_estimates.html"))
+HC_estimates_flu_gt <- HC_SB_GAM_flu_syph_gt%>%
+  gtsave(here("output/tables/BW_HC_GA_interaction_stillbirth", "M_HC_Z_GA_sb_gt_estimates.docx"))
+```
+
+###### Whole summary table (for suppl. data)
+```{r}
+HC_GAM_flu_syph_mod2 <- round((estimates_cont(M_HC_Z_GA_sb)[c(1:7),]), 2)
+HC_GAMmod2 <- HC_GAM_flu_syph_mod2 %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+HC_GAMmod2$pvalue <-  format(round(HC_GAMmod2$pvalue, digits=2), nsmall=2)
+HC_GAMmod2 <- HC_GAMmod2%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+HC_GAMmod2$pvalue1 <- (ifelse(is.na(HC_GAMmod2$pvalue1), HC_GAMmod2$pvalue, HC_GAMmod2$pvalue1))
+HC_GAMmod2 <- HC_GAMmod2 %>%
+  select(-one_of('pvalue'))  
+HC_GAM3.2 <- HC_GAMmod2 %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  HC_GAM3.2['Parameters'] <- c("intercept", 
+                           "Sex (ref: male)",
+                           "Disease during pregnancy (ref: none)", 
+                             " ",
+                             "Stillbirth (ref no)", "Influenza: yes * stillbirth (ref no)",
+                            "Syphilis: yes * stillbirth (ref no)")
+  HC_GAM3.2['category'] <- c(" ", "female", 
+                             "influenza", "syphilis", "yes",
+                           "stillbirth yes", "stillbirth yes")
+    HC_GAM3.2<-HC_GAM3.2[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+
+
+  M_HC.s_gt <- HC_GAM3.2 %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci),) %>%
+     tab_style(
+    style = list(
+      cell_fill(color = "#e0e0e0")),
+    locations = cells_body(rows=c(2,5))) %>%
+      tab_style(
+    style = list(
+      cell_fill(color = "#F2F0F0")),
+    locations = cells_body(rows=c(3,4,6,7))) %>%
+     tab_source_note(source_note = "n=8'344")  %>%
+  tab_options(table.width = pct(30), data_row.padding = px(2),   table.font.size = 12,
+              column_labels.font.weight = "bold",  row_group.font.weight  = "bold",
+              heading.title.font.size = 14, heading.subtitle.font.size = 14
+  )
+    M_HC.s_gt
+   #pct18 
+hc_estimates_2_gt <- M_HC.s_gt%>%
+  gtsave(here("output/tables/suppl_data/BW_HC_GA_interaction_stillbirth", "M_HC_Z_GA_sb_estimates_gt_full.html"))
+hc_estimates_2_gt <- M_HC.s_gt%>%
+  gtsave(here("output/tables/suppl_data/BW_HC_GA_interaction_stillbirth", "M_HC_Z_GA_sb_estimates_gt_full.docx"))
+```
+
+
+# Gestational age
+```{r}
+mod_ga_0<- gam(GA_weeks_corrected ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) + flu_or_syph+parity_cat2+sex, data=laus4_livebirths)
+summary(mod_ga_0)
+
+mod_ga_e<- gam(GA_weeks_corrected ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology, data=laus4_livebirths)
+  AIC(mod_ga_e)-AIC(mod_ga_0) 
+  BIC(mod_ga_e)-BIC(mod_ga_0) 
+# morphology improves model fit
+
+mod_ga_f<- gam(GA_weeks_corrected ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2, data=laus4_livebirths)
+  summary(mod_ga_f)
+  AIC(mod_ga_f)-AIC(mod_ga_e) 
+  BIC(mod_ga_f)-BIC(mod_ga_e) 
+# civil status improves model fit
+
+mod_ga_g<- gam(GA_weeks_corrected ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +Lausanne, data=laus4_livebirths)
+  summary(mod_ga_g)
+  AIC(mod_ga_g)-AIC(mod_ga_f)   
+  BIC(mod_ga_g)-BIC(mod_ga_f)   
+# Putting Lausanne variable instead of civil status Improves model fit
+  
+mod_ga_h<- gam(GA_weeks_corrected ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne, data=laus4_livebirths)
+  summary(mod_ga_h)
+  AIC(mod_ga_h)-AIC(mod_ga_f) 
+  AIC(mod_ga_h)-AIC(mod_ga_g) 
+  BIC(mod_ga_h)-BIC(mod_ga_f) 
+  BIC(mod_ga_h)-BIC(mod_ga_g) 
+# Putting both civil status and Lausanne variables improve model fit, based on AIC AND on BIC.
+  
+mod_ga_i<- gam(GA_weeks_corrected ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne+hisco_class_3, data=laus4_livebirths)
+  summary(mod_ga_i)
+  AIC(mod_ga_i)-AIC(mod_ga_h) 
+  BIC(mod_ga_i)-BIC(mod_ga_h) 
+#hisco class does not improve the model fit
+  
+mod_ga_k<- gam(GA_weeks_corrected ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne+Goitre, data=laus4_livebirths)
+  summary(mod_ga_k)
+  AIC(mod_ga_k)-AIC(mod_ga_h)
+  BIC(mod_ga_k)-BIC(mod_ga_h)
+  # Goitre variable does not improve the fit (based on BIC only)
+
+mod_ga_l<- gam(GA_weeks_corrected ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne+rickets, data=laus4_livebirths)
+  summary(mod_ga_l)
+  AIC(mod_ga_l)-AIC(mod_ga_h)
+  BIC(mod_ga_l)-BIC(mod_ga_h)
+  # Rickets variable does not improve the fit (based on BIC only)
+
+# --> mod_ga_h best model.
+M_GA<- gam(GA_weeks_corrected ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne, data=laus4_livebirths)
+  summary(M_GA)
+  gam.check(M_GA)
+  concurvity(M_GA)
+nobs(m_GA) #n=7926
+```
+
+## Summary table
+```{r}
+GA_GAM_mod <- round(head(estimates_GAM_cont(M_GA),11), 2)
+GA_GAMmod <- GA_GAM_mod %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+GA_GAMmod$pvalue <-  format(round(GA_GAMmod$pvalue, digits=2), nsmall=2)
+GA_GAMmod <- GA_GAMmod%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+GA_GAMmod$pvalue1 <- (ifelse(is.na(GA_GAMmod$pvalue1),    GA_GAMmod$pvalue,  GA_GAMmod$pvalue1))
+GA_GAMmod <- GA_GAMmod %>%
+  select(-one_of('pvalue'))  
+GA_GAM3 <- GA_GAMmod %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  GA_GAM3['Parameters'] <- c("intercept", 
+                            "Disease during pregnancy (ref: no)"," ", 
+                            "Parity (ref: 1)", " ", "Sex (ref: male)",
+                            "Morphology (ref: neither)", "", 
+                            "Civil status (ref: married)",
+                            "Lausanne (ref: yes)", ""
+                            )
+  GA_GAM3['category'] <- c(" ",
+                          "influenza","syphilis",  
+                            "2", ">2", "female", 
+                            "Obese", "Thin",
+                            "single or missing",
+                           "no", "unsure")
+    GA_GAM3<-GA_GAM3[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+pvalues_smooth_GA_main = summary(M_GA)
+pvalues_smooth_GA_main <- pvalues_smooth_GA_main$s.table[,4]
+pvalues_smooth_GA_main <- format(pvalues_smooth_GA_main, scientific=FALSE)
+
+pvalues_smooth_GA_main_df <- data.frame(pvalues_smooth_GA_main) %>%
+  dplyr::mutate(Parameters=c("Time", "Seasonality", "Maternal height (cm)", "Maternal years (age)")) %>%
+  rename(c(pvalue=(pvalues_smooth_GA_main)))%>%
+  mutate(pvalue=as.numeric(pvalue)) %>%
+  mutate(pvalue1=pvalue) %>%
+  add_column(beta="")%>%
+  add_column(category="")%>%
+  add_column(lci="") %>%
+  add_column(uci="")
+
+pvalues_smooth_GA_main_df$pvalue <-  format(round(pvalues_smooth_GA_main_df$pvalue, digits=2), nsmall=2)
+
+pvalues_smooth_GA_main_df <- pvalues_smooth_GA_main_df %>%
+  mutate(pvalue1=case_when((pvalue1<0.00001) ~ "<0.0001",
+                           (pvalue1<0.001)~ "<0.001",
+                           (pvalue1<0.01)~ "<0.01")) 
+
+pvalues_smooth_GA_main_df$pvalue1 <- (ifelse(is.na(pvalues_smooth_GA_main_df$pvalue1), 
+                                             pvalues_smooth_GA_main_df$pvalue, pvalues_smooth_GA_main_df$pvalue1))
+pvalues_smooth_GA_main_df <- pvalues_smooth_GA_main_df%>%
+  select(-one_of('pvalue')) %>%
+  rename("pvalue"="pvalue1") 
+
+rowinfo = c("Smooth variables", "", "", "", "", "")
+ow <- rbind(rowinfo,pvalues_smooth_GA_main_df)
+
+GA <- rbind(GA_GAM3, ow)
+
+   M_GA_gt <- GA %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci),
+                  ) %>%
+     tab_style(
+    style = list(
+      cell_fill(color = "#e0e0e0")
+    ),
+    locations = cells_body(rows=c(2,3,6,9,13,15))) %>%
+      tab_style(
+    style = list(
+      cell_fill(color = "#F2F0F0")),
+    locations = cells_body(rows=c(4,5,7,8,10,11,14,16))) %>%
+     tab_source_note(source_note = "n=7'926")  %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(rows = 12)) %>%
+  tab_options(table.width = pct(25), data_row.padding = px(2),   table.font.size = 12,
+              column_labels.font.weight = "bold",  row_group.font.weight  = "bold",
+              heading.title.font.size = 14, heading.subtitle.font.size = 14
+  )
+    M_GA_gt
+    
+GA_estimates_flu_gt <- M_GA_gt%>%
+  gtsave(here("output/tables/BW_HC_main_models", "M_GA_estimates_flu_or_syph_gt.html"))
+GA_estimates_flu_gt <- M_GA_gt%>%
+  gtsave(here("output/tables/BW_HC_main_models", "M_GA_estimates_flu_or_syph_gt.docx"))
+```
+
+## Graph smooth variables
+```{r include=FALSE}
+  plot_m_GA_time <- GAM_plot_function_continuous(M_GA, 1) 
+  plot_m_GA_seas <- GAM_plot_function_continuous(M_GA, 2)
+  plot_m_GA_mat_age <- GAM_plot_function_continuous(M_GA, 4)
+  plot_m_GA_height <- GAM_plot_function_continuous(M_GA, 3)
+```
+
+### Time X GA
+```{r echo=FALSE}
+x_date <- laus4_livebirths %>% #careful, mayhave to change the dataset if I later work with smaller time ranges!
+    select(birthdate, birthdate_num) %>%
+    distinct(birthdate, .keep_all = TRUE) %>%
+    rename(x=birthdate_num)
+ 
+plot_data_GA <- plot_m_GA_time %>%
+    mutate(x=round(x,0)) %>%
+    left_join(x_date) %>%
+    mutate(date_x= ymd(paste0(birthdate)))
+  
+  lim1 <- as.POSIXct(ymd("1911-01-01"))
+  lim2 <- as.POSIXct(ymd("1922-12-31"))
+  
+  plot_GA_time <- ggplot(data=plot_data_GA)+
+    geom_line(aes(x=as.POSIXct(date_x),y=fit),lwd=lwdline, color=("black"))+
+    geom_ribbon(aes(x=as.POSIXct(date_x),ymin=CIl,ymax=CIu),alpha=0.15,lwd=lwdline, fill='black')+
+    xlab("Timeline (years)")+
+    ylab("Gestational age (weeks)")+
+    coord_cartesian(ylim=c(38,40)) +
+     scale_x_datetime( 
+      breaks = date_breaks("12 month"),
+                      labels = label_date_short(),
+                      limits =c(min(lim1), max(lim2)), 
+                      expand = c(0,0)) +
+    theme_bw()+
+    theme(axis.text.y=element_text(color="black",size=16), #size_axis
+          axis.text.x=element_text(color="black",size=16,angle=45,hjust=1), #size_axis
+          axis.title=element_text(size=16), #size_axis_title
+          legend.text=element_text(size=size_legend),
+          legend.title=element_text(size=size_legend_title),
+          legend.position="bottom",
+          legend.key.width = unit(1.5, "cm"), 
+          legend.key.height = unit(0.5, "cm")) +
+    theme(axis.title.x = axis.title.x.position) +
+    scale_y_continuous(breaks=seq(38,40,by=0.5)) 
+  plot_GA_time
+```
+
+#### Maternal age
+```{r}
+plot_GA_main_mat_age <- ggplot(data=plot_m_GA_mat_age)+
+  geom_line(aes(x=(x),y=fit),lwd=lwdline, color=("black"))+
+  geom_ribbon(aes(x=(x),ymin=CIl,ymax=CIu),alpha=0.15,lwd=lwdline, fill='black')+
+  xlab("Maternal age (years)")+
+  ylab("Gestational age (weeks)") +
+    coord_cartesian(ylim=c(38,40)) +
+  theme_bw()+
+    theme(axis.text.y=element_text(color="black",size=16), #size_axis
+          axis.text.x=element_text(color="black",size=16,angle=45,hjust=1.2), #size_axis
+          axis.title=element_text(size=16), #size_axis_title
+          legend.text=element_text(size=size_legend),
+          legend.title=element_text(size=size_legend_title),
+          legend.position="bottom",
+          legend.key.width = unit(1.5, "cm"), 
+          legend.key.height = unit(0.5, "cm")) +
+    theme(axis.title.x = axis.title.x.position) +
+  scale_x_continuous(breaks=seq(0,60,by=5),expand = c(0, 0)) +
+    scale_y_continuous(breaks=seq(38,40,by=0.5))
+plot_GA_main_mat_age
+```
+
+#### Maternal height
+```{r}
+plot_GA_mat_height <- ggplot(data=plot_m_GA_height)+
+  geom_line(aes(x=(x),y=fit),lwd=lwdline, color=("black"))+
+  geom_ribbon(aes(x=(x),ymin=CIl,ymax=CIu),alpha=0.15,lwd=lwdline, fill='black')+
+  xlab("Maternal height (cm)")+
+  ylab("Gestational age (weeks)") +
+    coord_cartesian(ylim=c(38,40)) +
+ theme_bw()+
+    theme(axis.text.y=element_text(color="black",size=16), #size_axis
+          axis.text.x=element_text(color="black",size=16,angle=45,hjust=1.2), #size_axis
+          axis.title=element_text(size=16), #size_axis_title
+          legend.text=element_text(size=size_legend),
+          legend.title=element_text(size=size_legend_title),
+          legend.position="bottom",
+          legend.key.width = unit(1.5, "cm"), 
+          legend.key.height = unit(0.5, "cm")) +
+    theme(axis.title.x = axis.title.x.position) +
+  scale_x_continuous(breaks=seq(80,180,by=10),expand = c(0, 0)) +
+    scale_y_continuous(breaks=seq(38,40,by=0.5))
+plot_GA_mat_height
+```
+
+#### Seasonality
+```{r}
+month_names <- c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+plot_GA_seas <- ggplot(data = plot_m_GA_seas) +
+  geom_line(aes(x = x, y = fit), lwd = lwdline, color = "black") +
+  geom_ribbon(aes(x = x, ymin = CIl, ymax = CIu), alpha = 0.15, lwd = lwdline, fill = 'black') +
+  xlab("Seasonality (day of the year)") +
+  ylab("Gestational age (weeks)") +
+    coord_cartesian(ylim=c(38,40)) +
+  theme_bw()+
+    theme(axis.text.y=element_text(color="black",size=16), #size_axis
+          axis.text.x=element_text(color="black",size=16,angle=45,hjust=1.2), #size_axis
+          axis.title=element_text(size=16), #size_axis_title
+          
+          legend.text=element_text(size=size_legend),
+          legend.title=element_text(size=size_legend_title),
+          legend.position="bottom",
+          legend.key.width = unit(1.5, "cm"), 
+          legend.key.height = unit(0.5, "cm")) +
+    theme(axis.title.x = axis.title.x.position) +
+  scale_x_continuous(breaks = seq(1, 366, by = 30.5), labels = month_names,expand = c(0, 0))+
+    scale_y_continuous(breaks=seq(38,40,by=0.5))
+plot_GA_seas
+```
+
+#### Graph
+```{r}
+GA_figureS3 <- ggarrange(plot_GA_main_mat_age,
+                        plot_GA_mat_height,
+                        plot_GA_time,
+                        plot_GA_seas,
+                        labels = c("A", "B", "C", "D"),
+                        ncol = 2, nrow=2)
+ggsave("output/graphs/suppl_data/M_GA_mod_smooth_var.pdf", GA_figureS3, width = 12, height = 8)
+```
+
+## Differentiating between live and stillbirths
+##### Syphilis
+```{r echo=TRUE}
+M_GA.syph.s <- gam(GA_weeks_corrected ~s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) + parity_cat2+sex+ morphology  +civil_status_cat2 + Lausanne+ Syphilis_2*stillbirth, data=laus4)
+ ggeffects::ggemmeans(M_GA.syph.s, terms=c("stillbirth", "Syphilis_2"))
+
+pred_df_syph_stillbirth <- ggeffects::ggpredict(M_GA.syph.s, terms = c("stillbirth", "Syphilis_2"))
+pred_df_syph_stillbirth_plot <- pred_df_syph_stillbirth %>%
+  plot() + labs(y = "gestational age (weeks)", x="") + 
+   ggtitle(" ")+
+   labs(color="Syphilis")+
+      scale_color_manual(values = c("blue","darkred"))+
+   theme(axis.text.x  = element_text(size = 20, colour = "black"),
+          axis.text.y  = element_text(size = 18, colour = "black"),
+          axis.title.y  = element_text(size = 20, colour = "black"),
+          legend.title = element_text(colour="black"))
+pred_df_syph_stillbirth_plot
+ggsave("output/graphs/brain_sparing/syph_GA_stillbirth_pred.pdf", pred_df_syph_stillbirth_plot, width = 6, height = 5)
+```
+
+##### Flu
+```{r echo=TRUE}
+M_GA.flu.s <- gam(GA_weeks_corrected ~s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) + parity_cat2+sex+ morphology  +civil_status_cat2 + Lausanne+ Flu_in_pregn_and_in_pandemic*stillbirth, data=laus4)
+
+ ggeffects::ggemmeans(M_HC.flu.s, terms=c("stillbirth", "Flu_in_pregn_and_in_pandemic"))
+
+pred_df_flu_stillbirth <- ggeffects::ggpredict(M_GA.flu.s, terms = c("stillbirth", "Flu_in_pregn_and_in_pandemic"))
+pred_df_flu_stillbirth_plot <- pred_df_flu_stillbirth %>%
+  plot() + labs(y = "gestational age (weeks)", x="") + 
+   ggtitle(" ")+
+   labs(color="Flu")+
+    scale_color_manual(values = c("blue","darkred"))+
+    theme(axis.text.x  = element_text(size = 20, colour = "black"),
+          axis.text.y  = element_text(size = 18, colour = "black"),
+          axis.title.y  = element_text(size = 20, colour = "black"),
+          legend.title = element_text(colour="black"))
+pred_df_flu_stillbirth_plot
+ggsave("output/graphs/brain_sparing/flu_GA_stillbirth_pred.pdf", pred_df_flu_stillbirth_plot, width = 6, height = 5)
+```
+
+# Anthropometrics sex - Z-score and infections
+## Overall
+### Flu infection
+This is among all births (live and stillbirths).
+
+```{r}
+# Reshape the data
+laus4_long_z_sex <- laus4 %>%
+  filter(!is.na(sex)) %>%
+  gather(key = "Variable", value = "Value", head_circ_perturb_Z_sex2, Birthweight_Z_sex2)
+
+# Find the range of y-axis values across all boxplots
+y_range_Z_sex_laus4 <- range(laus4_long_z_sex$Value)
+
+# Create a dataset for the right graph
+right_data <- subset(laus4_long_z_sex, Variable == "head_circ_perturb_Z_sex2")
+
+plot_flu_BW_HC_sex_zscore <- ggplot(laus4_long_z_sex, aes(x = Flu_in_pregn_and_in_pandemic, y = Value, fill = Flu_in_pregn_and_in_pandemic)) +
+  stat_halfeye(
+    adjust = 1,
+    .width = 0,
+    point_colour = NA
+  ) +
+  facet_grid(~Variable, scales = "fixed", labeller = labeller(Variable = c("Birthweight_Z_sex2" = "Birthweight", "head_circ_perturb_Z_sex2" = "Head circumference")), space = "free_x") +
+  theme_bw() +
+  labs(x = "Influenza", y = "sex Z-score") +
+  scale_fill_manual(values = c("no" = "gainsboro", "yes" = "lightcyan2")) +
+  coord_cartesian(ylim = c(-5, 3)) +
+  guides(fill = FALSE) +
+  geom_boxplot(
+    width = 0.2,
+    outlier.color = NA,
+    alpha = 0,
+    position = position_nudge(0),
+    size = 0.5
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", size = 0.7, colour = "#0072B2") +
+  geom_hline(data = right_data, aes(yintercept = -2), linetype = "dashed", size = 0.7, colour = "#D55E00")+
+   custom_theme()+
+  NULL 
+plot_flu_BW_HC_sex_zscore
+```
+
+### Syphilis
+This is among all births (live and stillbirths).
+
+```{r}
+plot_syph_BW_HC_sex_zscore <- ggplot(laus4_long_z_sex, aes(x = Syphilis_2, y = Value, fill = Syphilis_2)) +
+  stat_halfeye(
+    adjust = 1,
+    .width = 0,
+    point_colour = NA
+  ) +
+  facet_grid(~Variable, scales = "fixed", labeller = labeller(Variable = c("Birthweight_Z_sex2" = "Birthweight", "head_circ_perturb_Z_sex2" = "Head circumference")), space = "free_x") +
+  theme_bw() +
+  labs(x = "Syphilis", y = "sex Z-score") +
+  scale_fill_manual(values = c("no" = "gainsboro", "positive" = "lightcyan2")) +
+  coord_cartesian(ylim = c(-5, 3)) +
+  guides(fill = FALSE) +
+  geom_boxplot(
+    width = 0.2,
+    outlier.color = NA,
+    alpha = 0,
+    position = position_nudge(0),
+    size = 0.5
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", size = 0.7, colour = "#0072B2") +
+  geom_hline(data = right_data, aes(yintercept = -2), linetype = "dashed", size = 0.7, colour = "#D55E00") +  # Line for the right graph
+    custom_theme()+
+  NULL
+plot_syph_BW_HC_sex_zscore
+```
+
+### Arrange the two graphs
+```{r}
+infections_BW_HC_sex_Z_score <- egg::ggarrange(plot_flu_BW_HC_sex_zscore, 
+                                    plot_syph_BW_HC_sex_zscore,
+                                    labels = c("A", "B"),
+                                    ncol = 2, nrow = 1) 
+# save 13*5.5
+ggsave("output/graphs/brain_sparing/infections_head_circ_birthweight_sexzscore.pdf", infections_BW_HC_sex_Z_score, width = 14, height = 5.5, units = "in", device = "pdf")
+```
+
+## By stillbirth status
+### Flu
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+plot_flu_BW_HC_sex_zscore_stillbirth <- ggplot(laus4_long_z_sex, aes(x = Flu_in_pregn_and_in_pandemic, y = Value, fill = Flu_in_pregn_and_in_pandemic)) +
+  stat_halfeye(
+    adjust = 1,
+    .width = 0,
+    point_colour = NA
+  ) +
+  facet_grid(Variable~stillbirth, scales = "fixed", labeller = labeller(Variable = c("Birthweight_Z_sex2" = "Birthweight", "head_circ_perturb_Z_sex2" = "Head circumference")), space = "free_x") +
+  theme_bw() +
+ custom_theme()+
+  labs(x = "Influenza", y = "sex Z-score") +
+  scale_fill_manual(values = c("no" = "gainsboro", "yes" = "lightcyan2")) +
+  coord_cartesian(ylim = c(-5, 3)) +
+  guides(fill = FALSE) +
+  geom_boxplot(
+    width = 0.2,
+    outlier.color = NA,
+    alpha = 0,
+    position = position_nudge(0),
+    size = 0.5
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", size = 0.7, colour = "#0072B2") +
+  geom_hline(data = right_data, aes(yintercept = -2), linetype = "dashed", size = 0.7, colour = "#D55E00") 
+plot_flu_BW_HC_sex_zscore_stillbirth
+```
+
+
+### Syphilis
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+plot_syph_BW_HC_sex_zscore_stillbirth <- ggplot(laus4_long_z_sex, aes(x = Syphilis_2, y = Value, fill = Syphilis_2)) +
+  stat_halfeye(
+    adjust = 1,
+    .width = 0,
+    point_colour = NA
+  ) +
+  facet_grid(Variable~stillbirth, scales = "fixed", labeller = labeller(Variable = c("Birthweight_Z_sex2" = "Birthweight", "head_circ_perturb_Z_sex2" = "Head circumference")), space = "free_x") +
+  theme_bw() +
+  custom_theme()+
+  labs(x = "Syphilis", y = "sex Z-score") +
+  scale_fill_manual(values = c("no" = "gainsboro", "positive" = "lightcyan2")) +
+  coord_cartesian(ylim = c(-5, 3)) +
+  guides(fill = FALSE) +
+  geom_boxplot(
+    width = 0.2,
+    outlier.color = NA,
+    alpha = 0,
+    position = position_nudge(0),
+    size = 0.5
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", size = 0.7, colour = "#0072B2") +
+  geom_hline(data = right_data, aes(yintercept = -2), linetype = "dashed", size = 0.7, colour = "#D55E00")
+plot_syph_BW_HC_sex_zscore_stillbirth
+```
+
+### Arrange the two graphs
+```{r}
+infections_BW_HC_sex_Z_score_stillbirth <- egg::ggarrange(plot_flu_BW_HC_sex_zscore_stillbirth, 
+          plot_syph_BW_HC_sex_zscore_stillbirth,
+          labels = c("A", "B"),
+          ncol = 2, nrow = 1) 
+
+ggsave("output/graphs/brain_sparing/infections_head_circ_birthweight_stillbirth_sexzscore.pdf", infections_BW_HC_sex_Z_score_stillbirth, width = 16.25, height = 7.25, units = "in", device = "pdf")
+```
+
+
+# stillbirth and GA
+```{r}
+sb_ga <- laus4 %>%
+  group_by(stillbirth, flu_or_syph) %>%
+  filter(!is.na(hc.perturbed))%>%
+  summarise(mean(birthweight), sd(birthweight), 
+            mean(hc.perturbed), sd(hc.perturbed),
+            mean(GA_weeks_corrected), sd(hc.perturbed))
+sb_ga
+
+sb_ga1 <- laus4 %>%
+  group_by(stillbirth, flu_or_syph) %>%
+  filter(!is.na(hc.perturbed))%>%
+  summarise(mean(birthweight), mean(hc.perturbed), mean(GA_weeks_corrected))
+sb_ga1
+```
+
+## Plot
+```{r}
+BW_GA_SB_inf <- sb_ga %>%
+ggplot(aes(x = `mean(GA_weeks_corrected)`, y = `mean(birthweight)`, 
+           color = stillbirth, shape=stillbirth)) +
+   geom_point(size=4) +
+  labs(x = "Gestational age (weeks)", y = "Birth weight (g)") +
+  scale_color_manual(values = c("livebirth" = "#009E73", "stillbirth" = "#D55E00")) +
+  scale_shape_manual(values = c("livebirth" = 19, "stillbirth" = 17)) +
+ scale_y_continuous(breaks=seq(1800,3300, by=200))+
+  scale_x_continuous(breaks=seq(33,40, by=1))+
+ coord_cartesian(xlim=c(33,40), ylim = c(1800,3300))+
+theme_minimal() +
+    geom_line(data = subset(sb_ga, flu_or_syph == "no"), 
+            aes(group = 1), 
+            linetype = "solid", colour="#56B4E9", linewidth=0.8) +
+   geom_line(data = subset(sb_ga, flu_or_syph == "influenza"), 
+            aes(group = 1), 
+            linetype = "solid", colour="#CC79A7", linewidth=0.8) +
+   geom_line(data = subset(sb_ga, flu_or_syph == "syphilis"), 
+            aes(group = 1), 
+            linetype = "solid", colour="#E69F00", linewidth=0.8)+
+    annotate("text",colour="#E69F00",x=34.8,y=2180,
+             label="syphilis")+
+    annotate("text",colour="#CC79A7",x=37,y=2670,
+             label="influenza")+
+    annotate("text",colour="#56B4E9",x=38.3,y=3100,
+             label="no disease")+
+  theme(legend.position="none")+
+  custom_theme()+
+  NULL
+BW_GA_SB_inf
+
+
+HC_GA_SB_inf <- sb_ga %>%
+ggplot(aes(x = `mean(GA_weeks_corrected)`, y = `mean(hc.perturbed)`, 
+           color = stillbirth, shape=stillbirth)) +
+   geom_point(size=4) +
+  scale_y_continuous(breaks=seq(27,35,by=1)) +
+  scale_x_continuous(breaks=seq(33,40,by=1)) +
+  coord_cartesian(xlim=c(33,40),ylim=c(27,35))+
+  labs(x = "Gestational age (weeks)", y = "Head circumference (cm)") +
+  scale_color_manual(values = c("livebirth" = "#009E73", "stillbirth" = "#D55E00")) +
+  scale_shape_manual(values=c("livebirth"=19, "stillbirth"=17))+
+   theme_minimal() +
+    geom_line(data = subset(sb_ga, flu_or_syph == "no"), 
+            aes(group = 1), 
+            linetype = "solid", colour="#56B4E9", linewidth=0.8) +
+   geom_line(data = subset(sb_ga, flu_or_syph == "influenza"), 
+            aes(group = 1), 
+            linetype = "solid", colour="#CC79A7", linewidth=0.8) +
+   geom_line(data = subset(sb_ga, flu_or_syph == "syphilis"), 
+            aes(group = 1), 
+            linetype = "solid", colour="#E69F00", linewidth=0.8) +
+    annotate("text",colour="#E69F00",x=35.2,y=30,
+             label="syphilis")+
+    annotate("text",colour="#CC79A7",x=37,y=32.2,
+             label="influenza")+
+    annotate("text",colour="#56B4E9",x=38.4,y=34.2,
+             label="no disease")+
+  custom_theme()+
+  NULL
+HC_GA_SB_inf
+
+
+BW_HC_GA_SB_inf <- egg::ggarrange(BW_GA_SB_inf, 
+          HC_GA_SB_inf,
+          labels = c("A", "B"),
+          ncol = 2, nrow = 1) 
+ggsave("output/graphs/brain_sparing/infections_BW_HC_stillbirth_GA.pdf", BW_HC_GA_SB_inf, width = 16, height = 7, units = "in", device = "pdf")
+```
+
+
+## With SDs
+```{r}
+# BW_GA_SB_inf <- sb_ga %>%
+# ggplot(aes(x = `mean(GA_weeks_corrected)`, y = `mean(birthweight)`, color = stillbirth)) +
+#    geom_point() +
+#   labs(x = "Gestational age (weeks)", y = "Birth weight (g)") +
+#   scale_color_manual(values = c("livebirth" = "lightgreen", "stillbirth" = "darkred")) +
+#     geom_errorbar(aes(ymin = `mean(birthweight)` - `sd(birthweight)`,
+#                     ymax = `mean(birthweight)` + `sd(birthweight)`),
+#                 width = 0.1, color = "black", alpha = 0.5) +
+#   theme_minimal() +
+#     geom_line(data = subset(sb_ga, flu_or_syph == "none"), 
+#             aes(group = 1), 
+#             linetype = "solid", colour="lightgreen") +
+#    geom_line(data = subset(sb_ga, flu_or_syph == "flu"), 
+#             aes(group = 1), 
+#             linetype = "solid", colour="orange") +
+#    geom_line(data = subset(sb_ga, flu_or_syph == "syphilis"), 
+#             aes(group = 1), 
+#             linetype = "solid", colour="darkred") 
+# BW_GA_SB_inf
+# 
+# HC_GA_SB_inf <- sb_ga %>%
+# ggplot(aes(x = `mean(GA_weeks_corrected)`, y = `mean(hc.perturbed)`, color = stillbirth)) +
+#    geom_point() +
+#   labs(x = "Gestational age (weeks)", y = "Head circumference (cm)") +
+#   scale_color_manual(values = c("livebirth" = "lightgreen", "stillbirth" = "darkred")) +
+#    geom_errorbar(aes(ymin = `mean(hc.perturbed)` - `sd(hc.perturbed)`,
+#                     ymax = `mean(hc.perturbed)` + `sd(hc.perturbed)`),
+#                 width = 0.1, color = "black", alpha = 0.5) +
+#   theme_minimal() +
+#     geom_line(data = subset(sb_ga, flu_or_syph == "none"), 
+#             aes(group = 1), 
+#             linetype = "solid", colour="lightgreen") +
+#    geom_line(data = subset(sb_ga, flu_or_syph == "flu"), 
+#             aes(group = 1), 
+#             linetype = "solid", colour="orange") +
+#    geom_line(data = subset(sb_ga, flu_or_syph == "syphilis"), 
+#             aes(group = 1), 
+#             linetype = "solid", colour="darkred") 
+# HC_GA_SB_inf
+```
+
+try another graph
+```{r}
++ facet_wrap(~ stillbirth + disease)
+```
+
+
+
+# looking into residuals
+```{r}
+names(m_HC)
+
+b0<- m_HC$residuals< -2000 
+sum(b0)
+# 23 cases are badly fitted
+
+gam.check(M_HC)
+b0<- m_HC$residuals< -5
+sum(b0)
+
+b0<- m_HC$residuals>8
+sum(b0)
+# only 2 concerned
+length(m_HC$linear.predictors)
+(1: length(m_HC$linear.predictors))[b0] # from 1 to whatever the length... [] is a subset opearto. -> out of the sequence within the (), extract those where b0 is true (meaning 2 points)
+#row number
+
+dim(laus_livebirth)
+names(m_HC)
+m_HC$y[b0]
+
+aux<- laus_livebirth$hc.perturbed
+b1 <- (1:length(aux))[laus_livebirth$hc.perturbed %in% m_HC$y[b0]]
+# these are the correct positions in the laus_livebirth that satisfy the conditions
+# ie the 2 strange residuals
+
+# %in% operator 
+(1:10) %in% c(5,8) # true only in the positions 
+c(5,8) %in% (1:10)
+
+b1
+t <- laus_livebirth[b1,]
+```
