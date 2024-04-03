@@ -65,7 +65,7 @@ axis.title.x.position <- element_text(margin = margin(t =12))
 
 
 #loading R codes 
-source("R/formating_var.R") # run separately
+source("R/data_cleaning.R") # run separately
 source("R/functions.R") 
 source("R/flu_cleaning.R") 
 source("R/Inclusions.R") 
