@@ -235,10 +235,3 @@ summary(laus1$day366)
 
 laus1<- laus1 %>%
   mutate(day0=0)
-
-
-abortions <- abortions %>%
-  mutate(Date =as.Date(Date, format = "%Y-%m-%d", useNA= "always"),
-         YearMonth = format(Date, "%Y-%m"),
-         Year=format(Date, "%Y"))
-
