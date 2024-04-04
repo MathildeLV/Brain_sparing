@@ -199,12 +199,9 @@ dim(laus4_livebirths)
 gam.check(M_BW)
 concurvity(M_BW, full=TRUE)
 
-# coll of the non-smooth variables?
-# car::vif(M_BW)
-# non_smooth_terms <- c("flu_or_syph", "parity_cat2", "sex", "morphology", "civil_status_cat2", "Lausanne")  
-# non_smooth_data <- model.matrix(M_BW)[, colnames(model.matrix(M_BW)) %in% non_smooth_terms]
-M_BWu<- glm(birthweight ~ birthdate_num +day366 + height+  age_mother +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne, data=laus4_livebirths)
-vif(M_BWu)
+# Checking multicollinearity
+M_BW_glm<- glm(birthweight ~ birthdate_num +day366 + height+ age_mother +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne, data=laus4_livebirths)
+vif(M_BW_glm)
 ```
 
 ##### Summary table
@@ -449,8 +446,12 @@ ggsave("output/graphs/suppl_data/M_BW_birthweight_mod_smooth_var.pdf", BW_figure
 M_BW.Z<- gam(Birthweight_Z ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne, data=laus4_livebirths)
   summary(M_BW.Z)
   gam.check(M_BW.Z)
-  concurvity(M_BW.Z)
+  concurvity(M_BW.Z, full=TRUE)
   nobs(M_BW.Z)
+  
+# Checking multicollinearity
+M_BW.Z_glm<- glm(Birthweight_Z ~ birthdate_num+ day366 + height+  age_mother +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne, data=laus4_livebirths)
+  vif(M_BW.Z_glm)
 ```
 
 ##### Summary table
@@ -699,6 +700,7 @@ ggsave("output/graphs/brain_sparing/flu_birthweight_stillbirth_pred.pdf", pred_d
 M_BW_sb<- glm(birthweight ~sex+ flu_or_syph*stillbirth , data=laus4)
 nobs(M_BW_sb) #8502
 summary(M_BW_sb)
+vif(M_BW_sb)
 ```
 
 ###### Quick summary table
@@ -790,6 +792,7 @@ M_BW_s_estimates_gt <- M_BW_s_2gt%>%
 M_BW.Z_sb<- glm(Birthweight_Z ~sex+ flu_or_syph*stillbirth, data=laus4)
 nobs(M_BW.Z_sb)
 summary(M_BW.Z_sb) #n 8502
+vif(M_BW.Z_sb)
 ```
 
 ###### Quick summary table
@@ -882,6 +885,7 @@ M_BW_s_estimates_gt <- M_BW_s_2gt%>%
 M_BW_Z_GA_sb<- glm(Birthweight_Z_GA ~sex+ flu_or_syph*stillbirth, data=laus4)
 nobs(M_BW_Z_GA_sb)
 summary(M_BW_Z_GA_sb) #n 8480
+vif(M_BW_Z_GA_sb)
 ```
 
 ###### Quick summary table
@@ -1028,9 +1032,13 @@ mod4l<- gam(hc.perturbed ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(
 m_HC<- gam(hc.perturbed ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne, data=laus4_livebirths)
   summary(m_HC)
 gam.check(m_HC)
-concurvity(m_HC)
+concurvity(m_HC, full=TRUE)
 summary(laus4_livebirths$hc.perturbed) #missing 32
 nobs(m_HC) #n=7899
+
+# Checking multicollinearity
+m_HC_glm<- glm(hc.perturbed ~ birthdate_num+ day366 + height+  age_mother +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne, data=laus4_livebirths)
+vif(m_HC_glm)
 ```
 
 ##### Summary table
@@ -1304,6 +1312,10 @@ M_HC.Z<- gam(head_circ_perturb_Z ~ s(birthdate_num)+ s(day366, bs="cc") + s(heig
 gam.check(M_HC.Z)
 concurvity(M_HC.Z)
 nobs(M_HC.Z)
+
+# Checking multicollinearity
+M_HC.Z_glm<- glm(head_circ_perturb_Z ~ birthdate_num+ day366 + height+  age_mother +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne, data=laus4_livebirths)
+vif(M_HC.Z_glm)
 ```
 
 ##### Summary table
@@ -1553,6 +1565,7 @@ ggsave("output/graphs/brain_sparing/flu_head_circ_stillbirth_pred.pdf", pred_df_
 M_HC_sb <- glm(hc.perturbed ~ sex+ flu_or_syph*stillbirth, data=laus4)
 summary(M_HC_sb)
 nobs(M_HC_sb)#n 8'367
+vif(M_HC_sb)
 ```
 
 ###### Quick summary table
@@ -1650,6 +1663,7 @@ hc_estimates_2_gt <- M_HC.s_gt%>%
 M_HC_Z_sb <- glm(head_circ_perturb_Z ~sex+ flu_or_syph*stillbirth, data=laus4)
 summary(M_HC_Z_sb)
 nobs(M_HC_Z_sb) # n 8367
+vif(M_HC_Z_sb)
 ```
 
 ###### Quick summary table
@@ -1749,6 +1763,7 @@ hc_estimates_2_gt <- M_HC.s_gt%>%
 M_HC_Z_GA_sb <- glm(head_circ_perturb_Z_GA ~sex+ flu_or_syph*stillbirth, data=laus4)
 summary(M_HC_Z_GA_sb)
 nobs(M_HC_Z_GA_sb)#n 8'344
+vif(M_HC_Z_GA_sb)
 ```
 
 ###### Quick summary table
@@ -1895,7 +1910,11 @@ M_GA<- gam(GA_weeks_corrected ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)
   summary(M_GA)
   gam.check(M_GA)
   concurvity(M_GA)
-nobs(m_GA) #n=7926
+nobs(M_GA) #n=7926
+
+# Checking multicollinearity
+M_GA_glm<- glm(GA_weeks_corrected ~ birthdate_num+ day366 + height+ age_mother +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne, data=laus4_livebirths)
+vif(M_GA_glm)
 ```
 
 ## Summary table
