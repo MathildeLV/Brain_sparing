@@ -34,6 +34,7 @@ library(grid)
 library(smd) # for adding add_difference in tbl_summary
 library(car) #to check for VIF factor of collinearity
 library(copula)
+library(collinear)
 
 # for plotting incidence/hospitalization cases in Lausanne/Vaud
 library(cowplot)
