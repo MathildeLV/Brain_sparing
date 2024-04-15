@@ -202,6 +202,9 @@ concurvity(M_BW, full=TRUE)
 # Checking multicollinearity
 M_BW_glm<- glm(birthweight ~ birthdate_num +day366 + height+ age_mother +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne, data=laus4_livebirths)
 vif(M_BW_glm)
+# gvif are the adjusted vif . mat age GVIF increase of 23% while all the other are small.
+# most of the GVIF were less than 3% and the maximum was 23% for maternal age.
+?vif
 ```
 
 ##### Summary table
