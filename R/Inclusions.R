@@ -23,10 +23,16 @@ laus1.3 <- laus1.2 %>%
   laus4 <- laus2 %>%
     filter(flu_or_syph != "influenza and syphilis") %>%
     mutate(flu_or_syph = droplevels(flu_or_syph))
-  
+    # primiparous only 
+  laus4_primi <- laus4 %>%
+    filter(parity_cat2=="(0,1]")
+
 # Exclude cases with both flu AND syphilis, LIVEBIRTHS only
   laus4_livebirths <- laus4 %>%
     filter(stillbirth=="livebirth") 
+  # primiparous women only
+  laus4_livebirths_primi <- laus4_livebirths %>%
+    filter(parity_cat2=="(0,1]")
   
 laus2 <- laus2 %>%
     select(-one_of("age_baby_cat",
@@ -119,7 +125,6 @@ laus2 <- laus2 %>%
   label(laus4_graph ) <- as.list(my_labels[match(names(laus4_graph ), # Assign labels to data frame variables
                                                  names(my_labels))])
   label(laus4_graph )  
-  
   
     #Exclusions based on INTERGROWTH-21: We dont use anymore   
 # laus_IG_exclusions <- laus2 %>%
