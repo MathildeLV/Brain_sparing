@@ -138,7 +138,8 @@ laus1 <- laus1 %>%
   mutate(Birthweight_Z =(birthweight - mean(birthweight, na.rm=TRUE)) / sd(birthweight, na.rm=TRUE),
          Placentaweight_Z =(placentaweight - mean(placentaweight, na.rm=TRUE)) / sd(placentaweight, na.rm=TRUE),
          Head_circ_Z =(head_circ - mean(head_circ, na.rm=TRUE)) / sd(head_circ, na.rm=TRUE),
-         head_circ_perturb_Z =(hc.perturbed - mean(hc.perturbed, na.rm=TRUE)) / sd(hc.perturbed, na.rm=TRUE)) 
+         head_circ_perturb_Z =(hc.perturbed - mean(hc.perturbed, na.rm=TRUE)) / sd(hc.perturbed, na.rm=TRUE),
+         ratio_PW_BW=placentaweight/birthweight) 
 
 ## Z transformed variables
 ### compute sex-related Z-score 
