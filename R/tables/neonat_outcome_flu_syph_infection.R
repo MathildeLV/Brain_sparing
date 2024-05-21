@@ -89,10 +89,10 @@ neonat_characteristics_flu_gt <- neonat_characteristics_flu %>%
 
 neonat_characteristics_flu_gt
 neonat_characteristics_flu_gt %>%
-  gtsave(here("output/tables", "UCL_neonatal_characteristics_flu.html"))
+  gtsave(here("outputs/tables", "UCL_neonatal_characteristics_flu.html"))
 
 neonat_characteristics_flu_gt %>%
-  gtsave(here("output/tables", "UCL_neonatal_characteristics_flu.docx"))
+  gtsave(here("outputs/tables", "UCL_neonatal_characteristics_flu.docx"))
 
 
 ## tbl_summary version, including counts and percentages ####
@@ -121,18 +121,19 @@ tab_neonat_flu_or_syph2_tbl_summary
 
 tab_neonat_flu_or_syph2_tbl_summary %>%
   gtsummary::as_gt() %>%
-  gtsave(here("output/tables/neonatal_outcomes_depending_on_flu_or_syph_inf", "neonatal_characteristics_based_on_matern_flu_or_syph_tbl_sum_1911_1922.html"))
+  gtsave(here("outputs/tables/neonatal_outcomes_depending_on_flu_or_syph_inf", "neonatal_characteristics_based_on_matern_flu_or_syph_tbl_sum_1911_1922.html"))
 
 tab_neonat_flu_or_syph2_tbl_summary %>%
   gtsummary::as_gt() %>%
-  gtsave(here("output/tables/neonatal_outcomes_depending_on_flu_or_syph_inf", "neonatal_characteristics_based_on_matern_flu_or_syph_tbl_sum_1911_1922.docx"))
+  gtsave(here("outputs/tables/neonatal_outcomes_depending_on_flu_or_syph_inf", "neonatal_characteristics_based_on_matern_flu_or_syph_tbl_sum_1911_1922.docx"))
 
 
 
 
 ### Flu: adding p value ####
 tab_neonat_flu_tbl_summary <- laus4_graph %>%
-  select(birthweight,head_circ,
+  filter(flu_or_syph!="syphilis") %>%
+  select(birthweight,head_circ,GA_weeks_corrected,
          sex,
          PTB_corrected,GA_weeks_cat_corrected2, LBW,
          stillbirth, neonat_mort_d1_d5,Flu_in_pregn_and_in_pandemic
@@ -140,14 +141,14 @@ tab_neonat_flu_tbl_summary <- laus4_graph %>%
   gtsummary::tbl_summary(
     by=Flu_in_pregn_and_in_pandemic,
     statistic = list(
-      c("birthweight", "head_circ") ~ "{mean} ({sd})",
+      c("birthweight", "head_circ", "GA_weeks_corrected") ~ "{mean} ({sd})",
       c("sex","PTB_corrected","GA_weeks_cat_corrected2", "LBW",
         "stillbirth", "neonat_mort_d1_d5") ~ "{n} ({p}%)"
     ),
     digits = list(
       c("sex","PTB_corrected", "GA_weeks_cat_corrected2","LBW",
         "stillbirth", "neonat_mort_d1_d5") ~ 0,
-      c("birthweight", "head_circ") ~ 1),
+      c("birthweight", "head_circ", "GA_weeks_corrected") ~ 1),
     missing_text = "missing"
   )%>%
   gtsummary::modify_header(label ~ "**Variable**") %>%
@@ -156,9 +157,34 @@ tab_neonat_flu_tbl_summary
 
 tab_neonat_flu_tbl_summary %>%
   gtsummary::as_gt() %>%
-  gtsave(here("output/tables/neonatal_outcomes_depending_on_flu_or_syph_inf", "neonatal_characteristics_based_on_matern_flu_tbl_sum_1911_1922.html"))
+  gtsave(here("outputs/tables/neonatal_outcomes_depending_on_flu_or_syph_inf", "neonatal_characteristics_based_on_matern_flu_tbl_sum_1911_1922.docx"))
 
-tab_neonat_flu_tbl_summary %>%
+### Syphilis: adding p value ####
+tab_neonat_syph_tbl_summary <- laus4_graph %>%
+  filter(flu_or_syph!="influenza") %>%
+  select(birthweight,head_circ,GA_weeks_corrected,
+         sex,
+         PTB_corrected,GA_weeks_cat_corrected2, LBW,
+         stillbirth, neonat_mort_d1_d5,Syphilis_2
+  ) %>%  
+  gtsummary::tbl_summary(
+    by=Syphilis_2,
+    statistic = list(
+      c("birthweight", "head_circ", "GA_weeks_corrected") ~ "{mean} ({sd})",
+      c("sex","PTB_corrected","GA_weeks_cat_corrected2", "LBW",
+        "stillbirth", "neonat_mort_d1_d5") ~ "{n} ({p}%)"
+    ),
+    digits = list(
+      c("sex","PTB_corrected", "GA_weeks_cat_corrected2","LBW",
+        "stillbirth", "neonat_mort_d1_d5") ~ 0,
+      c("birthweight", "head_circ", "GA_weeks_corrected") ~ 1),
+    missing_text = "missing"
+  )%>%
+  gtsummary::modify_header(label ~ "**Variable**") %>%
+  add_p() 
+tab_neonat_syph_tbl_summary
+
+tab_neonat_syph_tbl_summary %>%
   gtsummary::as_gt() %>%
-  gtsave(here("output/tables/neonatal_outcomes_depending_on_flu_or_syph_inf", "neonatal_characteristics_based_on_matern_flu_tbl_sum_1911_1922.docx"))
+  gtsave(here("outputs/tables/neonatal_outcomes_depending_on_flu_or_syph_inf", "neonatal_characteristics_based_on_matern_syph_tbl_sum_1911_1922.docx"))
 
