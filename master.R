@@ -35,11 +35,12 @@ library(smd) # for adding add_difference in tbl_summary
 library(car) #to check for VIF factor of collinearity
 library(copula)
 library(collinear)
-
+library(gamlss)
 # for plotting incidence/hospitalization cases in Lausanne/Vaud
 library(cowplot)
 library(ggsci)
 library(naniar)
+# library(shash)
 
 conflict_prefer("filter", "dplyr")
 conflict_prefer("rename", "dplyr")
@@ -74,3 +75,5 @@ source("R/Inclusions.R")
 #render Rmd files in html
 # render("R/PTB_brain_sparing_UCL.Rmd", output_file = paste0("../output/",today(),"PTB_brain_sparing.html"))
 # rmarkdown::render("R/PTB_brain_sparing_pdf.Rmd", output_file = paste0("../output/", today(), "Lausanne_pregancy_outcomes_and_infections.pdf"))
+rmarkdown::render("R/Copula.Rmd", output_file = paste0("../outputs/", today(), "copula_.pdf"))
+render("R/Copula.Rmd", output_file = paste0("../outputs/",today(),"copula.html"))
