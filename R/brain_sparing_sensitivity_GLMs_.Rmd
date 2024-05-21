@@ -1,0 +1,612 @@
+---
+title: "Infection during pregnancy and pregancy outcomes and anthropometrics, UCL 2023-24"
+author: "Mathilde Le Vu, Jonathan Wells, Mario Cortina-Borja"
+date: "2023-12-05"
+html_document: 
+output:
+  rmdformats::robobook:
+    code_folding: show
+    self_contained: true
+    highlight: pygments
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+
+# Anthropometric parameters
+## Birthweight
+#### M_BW: Livebirths
+```{r echo=TRUE}
+mod4a0<- glm(birthweight ~ birthdate_num +day366 + height+  age_mother + flu_or_syph+parity_cat2+sex, data=laus4_livebirths)
+
+mod4e<- glm(birthweight ~ birthdate_num+ day366+ height+  age_mother +flu_or_syph+parity_cat2+sex+morphology, data=laus4_livebirths)
+  AIC(mod4e)-AIC(mod4a0) 
+  BIC(mod4e)-BIC(mod4a0) 
+# morphology improves model fit
+
+mod4f<- glm(birthweight ~ birthdate_num+ day366 + height+  age_mother +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2, data=laus4_livebirths)
+  summary(mod4f)
+  AIC(mod4f)-AIC(mod4e) 
+  BIC(mod4f)-BIC(mod4e) 
+# civil status improves model fit BASED ON AIC ONLY
+# BIC a bit more conservative
+  
+mod4g<- glm(birthweight ~ birthdate_num+ day366 + height+  age_mother +flu_or_syph+parity_cat2+sex+morphology +Lausanne, data=laus4_livebirths)
+  summary(mod4g)
+  AIC(mod4g)-AIC(mod4f)   
+  BIC(mod4g)-BIC(mod4f)   
+# Putting Lausanne variable instead of civil status improves model fit
+  
+mod4h<- glm(birthweight ~ birthdate_num+ day366 + height+  age_mother +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne, data=laus4_livebirths)
+  summary(mod4h)
+  AIC(mod4h)-AIC(mod4f) 
+  AIC(mod4h)-AIC(mod4g) 
+  BIC(mod4h)-BIC(mod4f) 
+  BIC(mod4h)-BIC(mod4g) 
+# Putting both civil status and Lausanne variables improve model fit, based on AIC but not on BIC.
+  
+mod4i<-  glm(birthweight ~ birthdate_num+ day366 + height+  age_mother +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne+hisco_class_3, data=laus4_livebirths)
+  summary(mod4i)
+  AIC(mod4i)-AIC(mod4h) 
+  BIC(mod4i)-BIC(mod4h) 
+#hisco class does not improve the model fit
+  
+mod4j<- glm(birthweight ~ birthdate_num+ day366 + height+  age_mother +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+hisco_class_3, data=laus4_livebirths)
+  AIC(mod4j)-AIC(mod4h) 
+  BIC(mod4j)-BIC(mod4h) 
+#hisco class does not improve the model fit, Lausanne variable is better
+  
+mod4k<- glm(birthweight ~ birthdate_num+ day366 + height+  age_mother +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne+Goitre, data=laus4_livebirths)
+  summary(mod4k)
+  AIC(mod4k)-AIC(mod4h)
+  BIC(mod4k)-BIC(mod4h)
+  # Goitre variable does not improve the fit.
+
+mod4l<- glm(birthweight ~ birthdate_num+ day366 + height+  age_mother +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne+rickets, data=laus4_livebirths)
+  summary(mod4l)
+  AIC(mod4l)-AIC(mod4h)
+  BIC(mod4l)-BIC(mod4h)
+  # Rickets variable does not improve the fit
+
+# --> mod4h best model.
+M_BW <- glm(birthweight ~ flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne+birthdate_num+ day366 + height+  age_mother, data=laus4_livebirths)
+  summary(M_BW)
+
+nobs(M_BW) #n=7926
+dim(laus4_livebirths)
+
+
+# Checking multicollinearity
+vif(M_BW)
+# gvif are the adjusted vif . mat age GVIF increase of 23% while all the other are small.
+# most of the GVIF were less than 3% and the maximum was 23% for maternal age.
+```
+
+##### Summary table
+```{r}
+BW_glm_flu_mod <- round(head(estimates_cont(M_BW),15), 2)
+BW_glmmod <- BW_glm_flu_mod %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+BW_glmmod$pvalue <-  format(round(BW_glmmod$pvalue, digits=2), nsmall=2)
+BW_glmmod <- BW_glmmod%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+BW_glmmod$pvalue1 <- (ifelse(is.na(BW_glmmod$pvalue1),    BW_glmmod$pvalue,  BW_glmmod$pvalue1))
+BW_glmmod <- BW_glmmod %>%
+  select(-one_of('pvalue'))  
+BW_glm3 <- BW_glmmod %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  BW_glm3['Parameters'] <- c("intercept",
+                            "Disease during pregnancy (ref: no)"," ", 
+                            "Parity (ref: 1)", " ", "Sex (ref: male)",
+                            "Morphology (ref: neither)", "", 
+                            "Civil status (ref: married)",
+                            "Lausanne (ref: yes)", "", 
+                            "time (d/m/y)", "seasonality", "height (cm)", "age (years)"
+                            )
+  BW_glm3['category'] <- c(" ",
+                          "influenza","syphilis",  
+                            "2", ">2", "female", 
+                            "Obese", "Thin",
+                            "single or missing",
+                           "no", "unsure",
+                          "", "", "", "")
+    BW_glm3<-BW_glm3[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+
+   M_BW_gt <- BW_glm3 %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci),
+                  ) %>%
+     tab_style(
+    style = list(
+      cell_fill(color = "#e0e0e0")
+    ),
+    locations = cells_body(rows=c(2,3,6,9,12,14))) %>%
+      tab_style(
+    style = list(
+      cell_fill(color = "#F2F0F0")),
+    locations = cells_body(rows=c(4,5,7,8,10,11,13,15))) %>%
+     tab_source_note(source_note = "n=7'926")  %>%
+  tab_options(table.width = pct(18), data_row.padding = px(2),   table.font.size = 12,
+              column_labels.font.weight = "bold",  row_group.font.weight  = "bold",
+              heading.title.font.size = 14, heading.subtitle.font.size = 14
+  )
+    M_BW_gt
+    
+BW_estimates_gt <- M_BW_gt%>%
+   gtsave(here("outputs/tables/suppl_data/GLM_sensitivity", "M_BW_estimates_flu_or_syph_gt.docx"))
+```
+
+
+#### MBW.Z: Z-score
+```{r}
+M_BW.Z<- glm(Birthweight_Z ~ flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne+birthdate_num+ day366 + height+  age_mother, data=laus4_livebirths)
+  summary(M_BW.Z)
+  nobs(M_BW.Z)
+  
+# Checking multicollinearity
+  vif(M_BW.Z)
+```
+
+##### Summary table
+```{r}
+BW_glm_flu_mod <- round(head(estimates_cont(M_BW.Z),15), 2)
+BW_glmmod <- BW_glm_flu_mod %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+BW_glmmod$beta <-  format(round(BW_glmmod$beta, digits=2), nsmall=2)
+BW_glmmod$lci <-  format(round(BW_glmmod$lci, digits=2), nsmall=2)
+BW_glmmod$uci <-  format(round(BW_glmmod$uci, digits=2), nsmall=2)
+BW_glmmod$pvalue <-  format(round(BW_glmmod$pvalue, digits=2), nsmall=2)
+BW_glmmod <- BW_glmmod%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+BW_glmmod$pvalue1 <- (ifelse(is.na(BW_glmmod$pvalue1),    BW_glmmod$pvalue,  BW_glmmod$pvalue1))
+BW_glmmod <- BW_glmmod %>%
+  select(-one_of('pvalue'))  
+BW_glm3 <- BW_glmmod %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  BW_glm3['Parameters'] <- c("intercept", 
+                            "Disease during pregnancy (ref: no)"," ", 
+                            "Parity (ref: 1)", " ", "Sex (ref: male)",
+                            "Morphology (ref: neither)", "", 
+                            "Civil status (ref: married)",
+                            "Lausanne (ref: yes)", "", 
+                            "time (d/m/y)", "seasonality", "height (cm)", "age (years)"
+                            )
+  BW_glm3['category'] <- c(" ",
+                          "influenza","syphilis",  
+                            "2", ">2", "female", 
+                            "Obese", "Thin",
+                            "single or missing",
+                           "no", "unsure",
+                          "", "", "", "")
+    BW_glm3<-BW_glm3[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+M_BW.Z_gt <- BW_glm3 %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci),
+                  ) %>%
+     tab_style(
+    style = list(
+      cell_fill(color = "#e0e0e0")
+    ),
+   locations = cells_body(rows=c(2,3,6,9,12,14))) %>%
+      tab_style(
+    style = list(
+      cell_fill(color = "#F2F0F0")),
+    locations = cells_body(rows=c(4,5,7,8,10,11,13,15))) %>%
+     tab_source_note(source_note = "n=7'926")  %>%
+  tab_options(table.width = pct(25), data_row.padding = px(2),   table.font.size = 12,
+              column_labels.font.weight = "bold",  row_group.font.weight  = "bold",
+              heading.title.font.size = 14, heading.subtitle.font.size = 14
+  )
+    M_BW.Z_gt
+    
+BW_z_estimates_gt <- M_BW.Z_gt%>%
+   gtsave(here("outputs/tables/suppl_data/GLM_sensitivity", "M_BW.Z_estimates_flu_or_syph_gt.docx"))
+```
+
+#### Adjusting for gestational age
+```{r}
+MBW.Z.GA2<- glm(Birthweight_Z_GA ~ flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne+birthdate_num+ day366 + height+  age_mother, data=laus4_livebirths)
+  summary(MBW.Z.GA2)
+  BIC(MBW.Z.GA2)
+```
+
+##### Summary table
+```{r}
+BW_glm_mod_adj_GA <- round(head(estimates_cont(MBW.Z.GA2),15), 2)
+BW_glm_mod_adj_GA <- BW_glm_mod_adj_GA %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+BW_glm_mod_adj_GA$pvalue <-  format(round(BW_glm_mod_adj_GA$pvalue, digits=2), nsmall=2)
+BW_glm_mod_adj_GA <- BW_glm_mod_adj_GA%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+BW_glm_mod_adj_GA$pvalue1 <- (ifelse(is.na(BW_glm_mod_adj_GA$pvalue1),    BW_glm_mod_adj_GA$pvalue,  BW_glm_mod_adj_GA$pvalue1))
+BW_glm_mod_adj_GA <- BW_glm_mod_adj_GA %>%
+  select(-one_of('pvalue'))  
+BW_glm3_adj_GA <- BW_glm_mod_adj_GA %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  BW_glm3_adj_GA['Parameters'] <- c("intercept", 
+                            "Disease during pregnancy (ref: none)"," ",
+                           "Parity (ref: 1)", " ", "Sex (ref: male)",
+                            "Morphology (ref: neither)", "", 
+                            "Civil status (ref: married)",
+                            "Lausanne (ref: yes)", "", 
+                            "time (d/m/y)", "seasonality", "height (cm)", "age (years)"
+                            )
+  BW_glm3_adj_GA['category'] <- c(" ",
+                          "influenza","syphilis",
+                            "2", ">2", "female",
+                            "Obese", "Thin",
+                            "single or missing",
+                           "no", "unsure",
+                          "", "", "", "")
+    BW_glm3_adj_GA<-BW_glm3_adj_GA[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+
+MBW.Z.GA_gt <- BW_glm3_adj_GA %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci),
+                  ) %>%
+  tab_options(table.width = pct(25), data_row.padding = px(2),   table.font.size = 12,
+              column_labels.font.weight = "bold",  row_group.font.weight  = "bold",
+              heading.title.font.size = 14, heading.subtitle.font.size = 14
+  )
+    MBW.Z.GA_gt
+    #pct 25
+
+BW_estimates_flu_adj_GA_gt <- MBW.Z.GA_gt%>%
+  gtsave(here("outputs/tables/suppl_data/GLM_sensitivity", "M_BW.Z.GA_estimates_flu_or_syph_adj_GA_gt.docx"))
+```
+
+
+## Head circumference
+#### M_HC : Livebirths
+```{r echo=TRUE}
+mod4a0<- glm(hc.perturbed ~ flu_or_syph+parity_cat2+sex+birthdate_num+ day366 + height+  age_mother, data=laus4_livebirths)
+
+mod4e<- glm(hc.perturbed ~ flu_or_syph+parity_cat2+sex+morphology+birthdate_num+ day366 + height+  age_mother, data=laus4_livebirths)
+  AIC(mod4e)-AIC(mod4a0) 
+  BIC(mod4e)-BIC(mod4a0) 
+# morphology improves model fit
+
+mod4f<- glm(hc.perturbed ~ flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+birthdate_num+ day366 + height+  age_mother, data=laus4_livebirths)
+  summary(mod4f)
+  AIC(mod4f)-AIC(mod4e) 
+  BIC(mod4f)-BIC(mod4e) 
+# civil status improves model fit (based on both BIC and AIC)
+
+mod4g<- glm(hc.perturbed ~ flu_or_syph+parity_cat2+sex+morphology +Lausanne+birthdate_num+ day366 + height+  age_mother, data=laus4_livebirths)
+  summary(mod4g)
+  AIC(mod4g)-AIC(mod4f)   
+  BIC(mod4g)-BIC(mod4f)   
+# Putting Lausanne variable instead of civil status Improves model fit
+  
+mod4h<- glm(hc.perturbed ~ flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne+birthdate_num+ day366 + height+  age_mother, data=laus4_livebirths)
+  summary(mod4h)
+  AIC(mod4h)-AIC(mod4f) 
+  AIC(mod4h)-AIC(mod4g) 
+  BIC(mod4h)-BIC(mod4f) 
+  BIC(mod4h)-BIC(mod4g) 
+# Putting both civil status and Lausanne variables improve model fit, based on AIC AND on BIC.
+  
+mod4i<- glm(hc.perturbed ~ flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne+hisco_class_3+birthdate_num+ day366 + height+  age_mother, data=laus4_livebirths)
+  summary(mod4i)
+  AIC(mod4i)-AIC(mod4h) 
+  BIC(mod4i)-BIC(mod4h) 
+#hisco class does not improve the model fit
+  
+mod4j<- glm(hc.perturbed ~ flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+hisco_class_3+birthdate_num+ day366 + height+  age_mother, data=laus4_livebirths)
+  AIC(mod4j)-AIC(mod4h) 
+  BIC(mod4j)-BIC(mod4h) 
+#hisco class does not improve the model fit, Lausanne variable is better
+  
+mod4k<- glm(hc.perturbed ~ flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne+Goitre+birthdate_num+ day366 + height+  age_mother, data=laus4_livebirths)
+  summary(mod4k)
+  AIC(mod4k)-AIC(mod4h)
+  BIC(mod4k)-BIC(mod4h)
+  # Goitre variable does not improve the fit.
+
+mod4l<- glm(hc.perturbed ~ flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne+rickets+birthdate_num+ day366 + height+  age_mother, data=laus4_livebirths)
+  summary(mod4l)
+  AIC(mod4l)-AIC(mod4h)
+  BIC(mod4l)-BIC(mod4h)
+  # Rickets variable does not improve the fit (based on BIC only)
+
+# --> mod4h best model.
+m_HC<- glm(hc.perturbed ~ flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne+birthdate_num+ day366 + height+  age_mother, data=laus4_livebirths)
+  summary(m_HC)
+nobs(m_HC) #n=7899
+# Checking multicollinearity
+vif(m_HC)
+```
+
+##### Summary table
+```{r}
+HC_glm_mod <- round(head(estimates_cont(m_HC),15), 2)
+HC_glmmod <- HC_glm_mod %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+HC_glmmod$pvalue <-  format(round(HC_glmmod$pvalue, digits=2), nsmall=2)
+HC_glmmod <- HC_glmmod%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+HC_glmmod$pvalue1 <- (ifelse(is.na(HC_glmmod$pvalue1),    HC_glmmod$pvalue,  HC_glmmod$pvalue1))
+HC_glmmod <- HC_glmmod %>%
+  select(-one_of('pvalue'))  
+HC_glm3 <- HC_glmmod %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  HC_glm3['Parameters'] <- c("intercept", 
+                            "Disease during pregnancy (ref: no)"," ", 
+                            "Parity (ref: 1)", " ", "Sex (ref: male)",
+                            "Morphology (ref: neither)", "", 
+                            "Civil status (ref: married)",
+                            "Lausanne (ref: yes)", "", 
+                            "time (d/m/y)", "seasonality", "height (cm)", "age (years)"
+                            )
+  HC_glm3['category'] <- c(" ",
+                          "influenza","syphilis",  
+                            "2", ">2", "female", 
+                            "Obese", "Thin",
+                            "single or missing",
+                           "no", "unsure",
+                          "", "", "", "")
+    HC_glm3<-HC_glm3[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+M_HC_gt <- HC_glm3 %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci),
+                  ) %>%
+       tab_source_note(source_note = "n=7'899")  %>%
+      tab_options(table.width = pct(18), data_row.padding = px(2),   table.font.size = 12,
+              column_labels.font.weight = "bold",  row_group.font.weight  = "bold",
+              heading.title.font.size = 14, heading.subtitle.font.size = 14
+  )
+    M_HC_gt
+    
+HC_estimates_flu_gt <- M_HC_gt%>%
+ gtsave(here("outputs/tables/suppl_data/GLM_sensitivity", "M_HC_estimates_flu_or_syph_gt.docx"))
+```
+
+
+#### MHC.Z: Z-score
+```{r}
+M_HC.Z<- glm(head_circ_perturb_Z ~ flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne+birthdate_num+ day366 + height+  age_mother, data=laus4_livebirths)
+nobs(M_HC.Z)
+
+# Checking multicollinearity
+vif(M_HC.Z)
+```
+
+##### Summary table
+```{r}
+HC_glm_mod <- round(head(estimates_cont(M_HC.Z),15), 2)
+HC_glmmod <- HC_glm_mod %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+HC_glmmod$pvalue <-  format(round(HC_glmmod$pvalue, digits=2), nsmall=2)
+HC_glmmod <- HC_glmmod%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+HC_glmmod$pvalue1 <- (ifelse(is.na(HC_glmmod$pvalue1),    HC_glmmod$pvalue,  HC_glmmod$pvalue1))
+HC_glmmod <- HC_glmmod %>%
+  select(-one_of('pvalue'))  
+HC_glm3 <- HC_glmmod %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  HC_glm3['Parameters'] <- c("intercept", 
+                            "Disease during pregnancy (ref: none)"," ", 
+                            "Parity (ref: 1)", " ", "Sex (ref: male)",
+                            "Morphology (ref: neither)", "", 
+                            "Civil status (ref: married)",
+                            "Lausanne (ref: yes)", "", 
+                            "time (d/m/y)", "seasonality", "height (cm)", "age (years)"
+                            )
+  HC_glm3['category'] <- c(" ",
+                          "influenza","syphilis",  
+                            "2", ">2", "female", 
+                            "Obese", "Thin",
+                            "single or missing",
+                           "no", "unsure",
+                          "", "", "", "")
+    HC_glm3<-HC_glm3[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+
+  M_HC.Z_gt <- HC_glm3 %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci),
+                  ) %>%
+     tab_source_note(source_note = "n=7'899")  %>%
+  tab_options(table.width = pct(25), data_row.padding = px(2),   table.font.size = 12,
+              column_labels.font.weight = "bold",  row_group.font.weight  = "bold",
+              heading.title.font.size = 14, heading.subtitle.font.size = 14
+  )
+    M_HC.Z_gt
+    
+ HC_z_estimates_flu_gt <- M_HC.Z_gt%>%
+   gtsave(here("outputs/tables/suppl_data/GLM_sensitivity", "M_HC.Z_estimates_flu_or_syph_gt.docx"))
+```
+
+#### Adjusting for gestational age
+```{r}
+MHC.Z.GA2 <- glm(head_circ_perturb_Z_GA ~ +flu_or_syph +parity_cat2+sex+morphology +civil_status_cat2+Lausanne+birthdate_num+ day366 + height+  age_mother, data=laus4_livebirths)
+  summary(MHC.Z.GA2)
+ nobs(MHC.Z.GA2)
+```
+
+##### Summary table
+```{r}
+HC_glm_mod_adj_GA <- round(head(estimates_cont(MHC.Z.GA2),15), 2)
+HC_glmmod_adj_GA <- HC_glm_mod_adj_GA %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+HC_glmmod_adj_GA$pvalue <-  format(round(HC_glmmod_adj_GA$pvalue, digits=2), nsmall=2)
+HC_glmmod_adj_GA <- HC_glmmod_adj_GA%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+HC_glmmod_adj_GA$pvalue1 <- (ifelse(is.na(HC_glmmod_adj_GA$pvalue1),    HC_glmmod_adj_GA$pvalue,  HC_glmmod_adj_GA$pvalue1))
+HC_glmmod_adj_GA <- HC_glmmod_adj_GA %>%
+  select(-one_of('pvalue'))  
+HC_glm3_adj_GA <- HC_glmmod_adj_GA %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  HC_glm3_adj_GA['Parameters'] <- c("intercept", 
+                            "Disease during pregnancy (ref: none)"," ",
+                            "Parity (ref: 1)", " ", "Sex (ref: male)",
+                            "Morphology (ref: neither)", "", 
+                            "Civil status (ref: married)",
+                            "Lausanne (ref: yes)", "", 
+                            "time (d/m/y)", "seasonality", "height (cm)", "age (years)"
+                            )
+  HC_glm3_adj_GA['category'] <- c(" ",
+                          "influenza","syphilis",
+                            "2", ">2", "female", 
+                            "Obese", "Thin",
+                            "single or missing",
+                           "no", "unsure",
+                          "", "", "", "")
+    HC_glm3_adj_GA<-HC_glm3_adj_GA[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+  MHC.Z.GA_gt <- HC_glm3_adj_GA %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci),
+                  ) %>%
+     tab_source_note(source_note = "n=7'880")  %>%
+  tab_options(table.width = pct(18), data_row.padding = px(2),   table.font.size = 12,
+              column_labels.font.weight = "bold",  row_group.font.weight  = "bold",
+              heading.title.font.size = 14, heading.subtitle.font.size = 14
+  )
+    MHC.Z.GA_gt
+    
+ HC_estimates_flu_adj_GA_gt <- MHC.Z.GA_gt%>%
+   gtsave(here("outputs/tables/suppl_data/GLM_sensitivity", "M_HC.Z.GA_estimates_flu_or_syph_adj_GA_gt.docx"))
+```
+
+# Gestational age
+```{r}
+mod_ga_0<- glm(GA_weeks_corrected ~ flu_or_syph+parity_cat2+sex+birthdate_num+ day366 + height+ age_mother, data=laus4_livebirths)
+summary(mod_ga_0)
+
+mod_ga_e<- glm(GA_weeks_corrected ~ flu_or_syph+parity_cat2+sex+morphology+birthdate_num+ day366 + height+ age_mother, data=laus4_livebirths)
+  AIC(mod_ga_e)-AIC(mod_ga_0) 
+  BIC(mod_ga_e)-BIC(mod_ga_0) 
+# morphology improves model fit
+
+mod_ga_f<- glm(GA_weeks_corrected ~ flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+birthdate_num+ day366 + height+ age_mother, data=laus4_livebirths)
+  summary(mod_ga_f)
+  AIC(mod_ga_f)-AIC(mod_ga_e) 
+  BIC(mod_ga_f)-BIC(mod_ga_e) 
+# civil status improves model fit
+
+mod_ga_g<- glm(GA_weeks_corrected ~ flu_or_syph+parity_cat2+sex+morphology +Lausanne+birthdate_num+ day366 + height+ age_mother, data=laus4_livebirths)
+  summary(mod_ga_g)
+  AIC(mod_ga_g)-AIC(mod_ga_f)   
+  BIC(mod_ga_g)-BIC(mod_ga_f)   
+# Putting Lausanne variable instead of civil status Improves model fit
+  
+mod_ga_h<- glm(GA_weeks_corrected ~ flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne+birthdate_num+ day366 + height+ age_mother, data=laus4_livebirths)
+  summary(mod_ga_h)
+  AIC(mod_ga_h)-AIC(mod_ga_f) 
+  AIC(mod_ga_h)-AIC(mod_ga_g) 
+  BIC(mod_ga_h)-BIC(mod_ga_f) 
+  BIC(mod_ga_h)-BIC(mod_ga_g) 
+# Putting both civil status and Lausanne variables improve model fit, based on AIC AND on BIC.
+  
+mod_ga_i<- glm(GA_weeks_corrected ~ flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne+hisco_class_3+birthdate_num+ day366 + height+ age_mother, data=laus4_livebirths)
+  summary(mod_ga_i)
+  AIC(mod_ga_i)-AIC(mod_ga_h) 
+  BIC(mod_ga_i)-BIC(mod_ga_h) 
+#hisco class does not improve the model fit
+  
+mod_ga_k<- glm(GA_weeks_corrected ~ flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne+Goitre+birthdate_num+ day366 + height+ age_mother, data=laus4_livebirths)
+  summary(mod_ga_k)
+  AIC(mod_ga_k)-AIC(mod_ga_h)
+  BIC(mod_ga_k)-BIC(mod_ga_h)
+  # Goitre variable does not improve the fit (based on BIC only)
+
+mod_ga_l<- glm(GA_weeks_corrected ~ flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne+rickets+birthdate_num+ day366 + height+ age_mother, data=laus4_livebirths)
+  summary(mod_ga_l)
+  AIC(mod_ga_l)-AIC(mod_ga_h)
+  BIC(mod_ga_l)-BIC(mod_ga_h)
+  # Rickets variable does not improve the fit (based on BIC only)
+
+# --> mod_ga_h best model.
+M_GA<- glm(GA_weeks_corrected ~ flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne+birthdate_num+ day366 + height+ age_mother, data=laus4_livebirths)
+  summary(M_GA)
+  nobs(M_GA) #n=7926
+
+# Checking multicollinearity
+vif(M_GA)
+```
+
+## Summary table
+```{r}
+GA_glm_mod <- round(head(estimates_cont(M_GA),15), 2)
+GA_glmmod <- GA_glm_mod %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+GA_glmmod$pvalue <-  format(round(GA_glmmod$pvalue, digits=2), nsmall=2)
+GA_glmmod <- GA_glmmod%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+GA_glmmod$pvalue1 <- (ifelse(is.na(GA_glmmod$pvalue1),    GA_glmmod$pvalue,  GA_glmmod$pvalue1))
+GA_glmmod <- GA_glmmod %>%
+  select(-one_of('pvalue'))  
+GA_glm3 <- GA_glmmod %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  GA_glm3['Parameters'] <- c("intercept", 
+                            "Disease during pregnancy (ref: no)"," ", 
+                            "Parity (ref: 1)", " ", "Sex (ref: male)",
+                            "Morphology (ref: neither)", "", 
+                            "Civil status (ref: married)",
+                            "Lausanne (ref: yes)", "", 
+                            "time (d/m/y)", "seasonality", "height (cm)", "age (years)"
+                            )
+  GA_glm3['category'] <- c(" ",
+                          "influenza","syphilis",  
+                            "2", ">2", "female", 
+                            "Obese", "Thin",
+                            "single or missing",
+                           "no", "unsure",
+                          "", "", "", "")
+    GA_glm3<-GA_glm3[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+M_GA_gt <- GA_glm3 %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci),
+                  ) %>%
+     tab_source_note(source_note = "n=7'926")  %>%
+ tab_options(table.width = pct(25), data_row.padding = px(2),   table.font.size = 12,
+              column_labels.font.weight = "bold",  row_group.font.weight  = "bold",
+              heading.title.font.size = 14, heading.subtitle.font.size = 14
+  )
+    M_GA_gt
+    
+ GA_estimates_flu_gt <- M_GA_gt%>%
+  gtsave(here("outputs/tables/suppl_data/GLM_sensitivity", "M_GA_estimates_flu_or_syph_gt.docx"))
+```

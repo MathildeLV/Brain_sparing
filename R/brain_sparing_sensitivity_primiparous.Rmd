@@ -1,0 +1,678 @@
+---
+title: "Infection during pregnancy and pregancy outcomes and anthropometrics, UCL 2023-24"
+author: "Mathilde Le Vu, Jonathan Wells, Mario Cortina-Borja"
+date: "2023-12-05"
+html_document: 
+output:
+  rmdformats::robobook:
+    code_folding: show
+    self_contained: true
+    highlight: pygments
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+# Research questions
+# Anthropometric parameters
+## Birthweight
+Both Flu and Syphilis in the same models
+#### M_BW: Livebirths
+```{r echo=TRUE}
+M_BW <- gam(birthweight ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+sex+morphology +civil_status_cat2+Lausanne, data=laus4_livebirths_primi)
+  summary(M_BW)
+
+nobs(M_BW) #n=2973
+gam.check(M_BW)
+concurvity(M_BW, full=TRUE)
+```
+
+##### Summary table
+```{r}
+BW_GAM_flu_mod <- round(head(estimates_GAM_cont(M_BW),9), 2)
+BW_GAMmod <- BW_GAM_flu_mod %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+BW_GAMmod$pvalue <-  format(round(BW_GAMmod$pvalue, digits=2), nsmall=2)
+BW_GAMmod <- BW_GAMmod%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+BW_GAMmod$pvalue1 <- (ifelse(is.na(BW_GAMmod$pvalue1),    BW_GAMmod$pvalue,  BW_GAMmod$pvalue1))
+BW_GAMmod <- BW_GAMmod %>%
+  select(-one_of('pvalue'))  
+BW_GAM3 <- BW_GAMmod %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  BW_GAM3['Parameters'] <- c("intercept", 
+                            "Disease during pregnancy (ref: no)"," ", 
+                            "Sex (ref: male)",
+                            "Morphology (ref: neither)", "", 
+                            "Civil status (ref: married)",
+                            "Lausanne (ref: yes)", ""
+                            )
+  BW_GAM3['category'] <- c(" ",
+                          "influenza","syphilis",  
+                            "female", 
+                            "Obese", "Thin",
+                            "single or missing",
+                           "no", "unsure")
+    BW_GAM3<-BW_GAM3[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+pvalues_smooth_BW_main = summary(M_BW)
+pvalues_smooth_BW_main <- pvalues_smooth_BW_main$s.table[,4]
+pvalues_smooth_BW_main <- format(pvalues_smooth_BW_main, scientific=FALSE)
+
+pvalues_smooth_BW_main_df <- data.frame(pvalues_smooth_BW_main) %>%
+  dplyr::mutate(Parameters=c("Time", "Seasonality", "Maternal height (cm)", "Maternal years (age)")) %>%
+  rename(c(pvalue=(pvalues_smooth_BW_main)))%>%
+  mutate(pvalue=as.numeric(pvalue)) %>%
+  mutate(pvalue1=pvalue) %>%
+  add_column(beta="")%>%
+  add_column(category="")%>%
+  add_column(lci="") %>%
+  add_column(uci="")
+
+pvalues_smooth_BW_main_df$pvalue <-  format(round(pvalues_smooth_BW_main_df$pvalue, digits=2), nsmall=2)
+
+pvalues_smooth_BW_main_df <- pvalues_smooth_BW_main_df %>%
+  mutate(pvalue1=case_when((pvalue1<0.00001) ~ "<0.0001",
+                           (pvalue1<0.001)~ "<0.001",
+                           (pvalue1<0.01)~ "<0.01")) 
+
+pvalues_smooth_BW_main_df$pvalue1 <- (ifelse(is.na(pvalues_smooth_BW_main_df$pvalue1), 
+                                             pvalues_smooth_BW_main_df$pvalue, pvalues_smooth_BW_main_df$pvalue1))
+pvalues_smooth_BW_main_df <- pvalues_smooth_BW_main_df%>%
+  select(-one_of('pvalue')) %>%
+  rename("pvalue"="pvalue1") 
+
+rowinfo = c("Smooth variables", "", "", "", "", "")
+ow <- rbind(rowinfo,pvalues_smooth_BW_main_df)
+
+BW <- rbind(BW_GAM3, ow)
+
+   M_BW_gt <- BW %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci),
+                  ) %>%
+     tab_source_note(source_note = "n=2,973")  %>%
+   tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(rows = 10)) %>%
+     tab_options(table.width = pct(18), data_row.padding = px(2),   table.font.size = 12,
+              column_labels.font.weight = "bold",  row_group.font.weight  = "bold",
+              heading.title.font.size = 14, heading.subtitle.font.size = 14
+  )
+    M_BW_gt
+    
+BW_estimates_gt <- M_BW_gt%>%
+  gtsave(here("outputs/tables/suppl_data/primiparous_sensitivity", "M_BW_estimates_flu_or_syph_primi.docx"))
+```
+
+#### MBW.Z: Z-score
+```{r}
+M_BW.Z<- gam(Birthweight_Z ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+sex+morphology +civil_status_cat2+Lausanne, data=laus4_livebirths_primi)
+  summary(M_BW.Z)
+  gam.check(M_BW.Z)
+  concurvity(M_BW.Z, full=TRUE)
+  nobs(M_BW.Z)
+```
+
+##### Summary table
+```{r}
+BW_GAM_flu_mod <- round(head(estimates_GAM_cont(M_BW.Z),9), 2)
+BW_GAMmod <- BW_GAM_flu_mod %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+BW_GAMmod$pvalue <-  format(round(BW_GAMmod$pvalue, digits=2), nsmall=2)
+BW_GAMmod <- BW_GAMmod%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+BW_GAMmod$pvalue1 <- (ifelse(is.na(BW_GAMmod$pvalue1),    BW_GAMmod$pvalue,  BW_GAMmod$pvalue1))
+BW_GAMmod <- BW_GAMmod %>%
+  select(-one_of('pvalue'))  
+BW_GAM3 <- BW_GAMmod %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  BW_GAM3['Parameters'] <- c("intercept", 
+                            "Disease during pregnancy (ref: no)"," ", 
+                            "Sex (ref: male)",
+                            "Morphology (ref: neither)", "", 
+                            "Civil status (ref: married)",
+                            "Lausanne (ref: yes)", ""
+                            )
+  BW_GAM3['category'] <- c(" ",
+                          "influenza","syphilis",  
+                            "female", 
+                            "Obese", "Thin",
+                            "single or missing",
+                           "no", "unsure")
+    BW_GAM3<-BW_GAM3[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+pvalues_smooth_BW_main = summary(M_BW.Z)
+pvalues_smooth_BW_main <- pvalues_smooth_BW_main$s.table[,4]
+pvalues_smooth_BW_main <- format(pvalues_smooth_BW_main, scientific=FALSE)
+
+pvalues_smooth_BW_main_df <- data.frame(pvalues_smooth_BW_main) %>%
+  dplyr::mutate(Parameters=c("Time", "Seasonality", "Maternal height (cm)", "Maternal years (age)")) %>%
+  rename(c(pvalue=(pvalues_smooth_BW_main)))%>%
+  mutate(pvalue=as.numeric(pvalue)) %>%
+  mutate(pvalue1=pvalue) %>%
+  add_column(beta="")%>%
+  add_column(category="")%>%
+  add_column(lci="") %>%
+  add_column(uci="")
+
+pvalues_smooth_BW_main_df$pvalue <-  format(round(pvalues_smooth_BW_main_df$pvalue, digits=2), nsmall=2)
+
+pvalues_smooth_BW_main_df <- pvalues_smooth_BW_main_df %>%
+  mutate(pvalue1=case_when((pvalue1<0.00001) ~ "<0.0001",
+                           (pvalue1<0.001)~ "<0.001",
+                           (pvalue1<0.01)~ "<0.01")) 
+
+pvalues_smooth_BW_main_df$pvalue1 <- (ifelse(is.na(pvalues_smooth_BW_main_df$pvalue1), 
+                                             pvalues_smooth_BW_main_df$pvalue, pvalues_smooth_BW_main_df$pvalue1))
+pvalues_smooth_BW_main_df <- pvalues_smooth_BW_main_df%>%
+  select(-one_of('pvalue')) %>%
+  rename("pvalue"="pvalue1") 
+
+rowinfo = c("Smooth variables", "", "", "", "", "")
+ow <- rbind(rowinfo,pvalues_smooth_BW_main_df)
+
+BW <- rbind(BW_GAM3, ow)
+
+   M_BW.Z_gt <- BW %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci),
+                  ) %>%
+     tab_source_note(source_note = "n=2,973")  %>%
+   tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(rows = 10)) %>%
+  tab_options(table.width = pct(25), data_row.padding = px(2),   table.font.size = 12,
+              column_labels.font.weight = "bold",  row_group.font.weight  = "bold",
+              heading.title.font.size = 14, heading.subtitle.font.size = 14
+  )
+    M_BW.Z_gt
+    
+BW_z_estimates_gt <- M_BW.Z_gt%>%
+  gtsave(here("outputs/tables/suppl_data/primiparous_sensitivity", "M_BW.Z_estimates_flu_or_syph_primi.docx"))
+```
+
+#### Adjusting for gestational age
+```{r}
+MBW.Z.GA2<- gam(Birthweight_Z_GA ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother)+  flu_or_syph+sex+morphology +civil_status_cat2+Lausanne, data=laus4_livebirths_primi)
+  summary(MBW.Z.GA2)
+  nobs(MBW.Z.GA2)
+  gam.check(MBW.Z.GA2)
+  concurvity(MBW.Z.GA2)
+```
+
+##### Summary table
+```{r}
+BW_GAM_mod_adj_GA <- round(head(estimates_GAM_cont(MBW.Z.GA2),9), 2)
+BW_GAM_mod_adj_GA <- BW_GAM_mod_adj_GA %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+BW_GAM_mod_adj_GA$pvalue <-  format(round(BW_GAM_mod_adj_GA$pvalue, digits=2), nsmall=2)
+BW_GAM_mod_adj_GA <- BW_GAM_mod_adj_GA%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+BW_GAM_mod_adj_GA$pvalue1 <- (ifelse(is.na(BW_GAM_mod_adj_GA$pvalue1),    BW_GAM_mod_adj_GA$pvalue,  BW_GAM_mod_adj_GA$pvalue1))
+BW_GAM_mod_adj_GA <- BW_GAM_mod_adj_GA %>%
+  select(-one_of('pvalue'))  
+BW_GAM3_adj_GA <- BW_GAM_mod_adj_GA %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  BW_GAM3_adj_GA['Parameters'] <- c("intercept", 
+                            "Disease during pregnancy (ref: none)"," ",
+                            "Sex (ref: male)",
+                            "Morphology (ref: neither)", "", 
+                            "Civil status (ref: married)",
+                            "Lausanne (ref: yes)", ""
+                            )
+  BW_GAM3_adj_GA['category'] <- c(" ",
+                          "influenza","syphilis",
+                            "female",
+                            "Obese", "Thin",
+                            "single or missing",
+                           "no", "unsure")
+    BW_GAM3_adj_GA<-BW_GAM3_adj_GA[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+pvalues_smooth_BW_adj_GA = summary(MBW.Z.GA2)
+pvalues_smooth_BW_adj_GA <- pvalues_smooth_BW_adj_GA$s.table[,4]
+pvalues_smooth_BW_adj_GA <- format(pvalues_smooth_BW_adj_GA, scientific=FALSE)
+
+pvalues_smooth_BW_adj_GA_main_df <- data.frame(pvalues_smooth_BW_adj_GA) %>%
+  dplyr::mutate(Parameters=c("Time", "Seasonality", "Maternal height (cm)", "Maternal years (age)")) %>%
+  rename(c(pvalue=(pvalues_smooth_BW_adj_GA)))%>%
+  mutate(pvalue=as.numeric(pvalue)) %>%
+  mutate(pvalue1=pvalue) %>%
+  add_column(beta="")%>%
+  add_column(category="")%>%
+  add_column(lci="") %>%
+  add_column(uci="")
+
+pvalues_smooth_BW_adj_GA_main_df$pvalue <-  format(round(pvalues_smooth_BW_adj_GA_main_df$pvalue, digits=2), nsmall=2)
+
+pvalues_smooth_BW_adj_GA_main_df <- pvalues_smooth_BW_adj_GA_main_df %>%
+  mutate(pvalue1=case_when((pvalue1<0.00001) ~ "<0.0001",
+                           (pvalue1<0.001)~ "<0.001",
+                           (pvalue1<0.01)~ "<0.01")) 
+
+pvalues_smooth_BW_adj_GA_main_df$pvalue1 <- (ifelse(is.na(pvalues_smooth_BW_adj_GA_main_df$pvalue1), 
+                                             pvalues_smooth_BW_adj_GA_main_df$pvalue, pvalues_smooth_BW_adj_GA_main_df$pvalue1))
+pvalues_smooth_BW_adj_GA_main_df <- pvalues_smooth_BW_adj_GA_main_df%>%
+  select(-one_of('pvalue')) %>%
+  rename("pvalue"="pvalue1") 
+
+rowinfo = c("Smooth variables", "", "", "", "", "")
+ow_adj_BW_GA <- rbind(rowinfo,pvalues_smooth_BW_adj_GA_main_df)
+
+BW_adj_GA <- rbind(BW_GAM3_adj_GA, ow_adj_BW_GA)
+
+   MBW.Z.GA_gt <- BW_adj_GA %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci),
+                  ) %>%
+     tab_source_note(source_note = "n=2,966")  %>%
+   tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(rows = 10)) %>%
+  tab_options(table.width = pct(25), data_row.padding = px(2),   table.font.size = 12,
+              column_labels.font.weight = "bold",  row_group.font.weight  = "bold",
+              heading.title.font.size = 14, heading.subtitle.font.size = 14
+  )
+    MBW.Z.GA_gt
+    
+BW_estimates_flu_adj_GA_gt <- MBW.Z.GA_gt%>%
+  gtsave(here("outputs/tables/suppl_data/primiparous_sensitivity", "M_BW.Z.GA_estimates_flu_or_syph_adj_GA_gt_primi.docx"))
+```
+
+
+## Head circumference
+#### M_HC : Livebirths
+```{r echo=TRUE}
+m_HC<- gam(hc.perturbed ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+ s(age_mother) +flu_or_syph+sex+morphology +civil_status_cat2+Lausanne, data=laus4_livebirths_primi)
+  summary(m_HC)
+gam.check(m_HC)
+concurvity(m_HC, full=TRUE)
+nobs(m_HC) #n=2961
+```
+
+##### Summary table
+```{r}
+HC_GAM_mod <- round(head(estimates_GAM_cont(m_HC),9), 2)
+HC_GAMmod <- HC_GAM_mod %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+HC_GAMmod$pvalue <-  format(round(HC_GAMmod$pvalue, digits=2), nsmall=2)
+HC_GAMmod <- HC_GAMmod%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+HC_GAMmod$pvalue1 <- (ifelse(is.na(HC_GAMmod$pvalue1),    HC_GAMmod$pvalue,  HC_GAMmod$pvalue1))
+HC_GAMmod <- HC_GAMmod %>%
+  select(-one_of('pvalue'))  
+HC_GAM3 <- HC_GAMmod %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  HC_GAM3['Parameters'] <- c("intercept", 
+                            "Disease during pregnancy (ref: no)"," ", 
+                            "Sex (ref: male)",
+                            "Morphology (ref: neither)", "", 
+                            "Civil status (ref: married)",
+                            "Lausanne (ref: yes)", ""
+                            )
+  HC_GAM3['category'] <- c(" ",
+                          "influenza","syphilis",  
+                            "female", 
+                            "Obese", "Thin",
+                            "single or missing",
+                           "no", "unsure")
+    HC_GAM3<-HC_GAM3[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+pvalues_smooth_HC_main = summary(m_HC)
+pvalues_smooth_HC_main <- pvalues_smooth_HC_main$s.table[,4]
+pvalues_smooth_HC_main <- format(pvalues_smooth_HC_main, scientific=FALSE)
+
+pvalues_smooth_HC_main_df <- data.frame(pvalues_smooth_HC_main) %>%
+  dplyr::mutate(Parameters=c("Time", "Seasonality", "Maternal height (cm)", "Maternal years (age)")) %>%
+  rename(c(pvalue=(pvalues_smooth_HC_main)))%>%
+  mutate(pvalue=as.numeric(pvalue)) %>%
+  mutate(pvalue1=pvalue) %>%
+  add_column(beta="")%>%
+  add_column(category="")%>%
+  add_column(lci="") %>%
+  add_column(uci="")
+
+pvalues_smooth_HC_main_df$pvalue <-  format(round(pvalues_smooth_HC_main_df$pvalue, digits=2), nsmall=2)
+
+pvalues_smooth_HC_main_df <- pvalues_smooth_HC_main_df %>%
+  mutate(pvalue1=case_when((pvalue1<0.00001) ~ "<0.0001",
+                           (pvalue1<0.001)~ "<0.001",
+                           (pvalue1<0.01)~ "<0.01")) 
+
+pvalues_smooth_HC_main_df$pvalue1 <- (ifelse(is.na(pvalues_smooth_HC_main_df$pvalue1), 
+                                             pvalues_smooth_HC_main_df$pvalue, pvalues_smooth_HC_main_df$pvalue1))
+pvalues_smooth_HC_main_df <- pvalues_smooth_HC_main_df%>%
+  select(-one_of('pvalue')) %>%
+  rename("pvalue"="pvalue1") 
+
+rowinfo = c("Smooth variables", "", "", "", "", "")
+ow <- rbind(rowinfo,pvalues_smooth_HC_main_df)
+
+HC <- rbind(HC_GAM3, ow)
+
+   M_HC_gt <- HC %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci),
+                  ) %>%
+     tab_source_note(source_note = "n=2,961")  %>%
+   tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(rows = 10)) %>%
+  tab_options(table.width = pct(18), data_row.padding = px(2),   table.font.size = 12,
+              column_labels.font.weight = "bold",  row_group.font.weight  = "bold",
+              heading.title.font.size = 14, heading.subtitle.font.size = 14
+  )
+    M_HC_gt
+    
+HC_estimates_flu_gt <- M_HC_gt%>%
+  gtsave(here("outputs/tables/suppl_data/primiparous_sensitivity", "M_HC_estimates_flu_or_syph_primi.docx"))
+```
+
+#### MHC.Z: Z-score
+```{r}
+M_HC.Z<- gam(head_circ_perturb_Z ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+sex+morphology +civil_status_cat2+Lausanne, data=laus4_livebirths_primi)
+gam.check(M_HC.Z)
+concurvity(M_HC.Z)
+nobs(M_HC.Z) #2961
+```
+
+##### Summary table
+```{r}
+HC_GAM_mod <- round(head(estimates_GAM_cont(M_HC.Z),9), 2)
+HC_GAMmod <- HC_GAM_mod %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+HC_GAMmod$pvalue <-  format(round(HC_GAMmod$pvalue, digits=2), nsmall=2)
+HC_GAMmod <- HC_GAMmod%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+HC_GAMmod$pvalue1 <- (ifelse(is.na(HC_GAMmod$pvalue1),    HC_GAMmod$pvalue,  HC_GAMmod$pvalue1))
+HC_GAMmod <- HC_GAMmod %>%
+  select(-one_of('pvalue'))  
+HC_GAM3 <- HC_GAMmod %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  HC_GAM3['Parameters'] <- c("intercept", 
+                            "Disease during pregnancy (ref: none)"," ", 
+                            "Sex (ref: male)",
+                            "Morphology (ref: neither)", "", 
+                            "Civil status (ref: married)",
+                            "Lausanne (ref: yes)", ""
+                            )
+  HC_GAM3['category'] <- c(" ",
+                          "influenza","syphilis",  
+                            "female", 
+                            "Obese", "Thin",
+                            "single or missing",
+                           "no", "unsure")
+    HC_GAM3<-HC_GAM3[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+pvalues_smooth_HC_main = summary(M_HC.Z)
+pvalues_smooth_HC_main <- pvalues_smooth_HC_main$s.table[,4]
+pvalues_smooth_HC_main <- format(pvalues_smooth_HC_main, scientific=FALSE)
+
+pvalues_smooth_HC_main_df <- data.frame(pvalues_smooth_HC_main) %>%
+  dplyr::mutate(Parameters=c("Time", "Seasonality", "Maternal height (cm)", "Maternal years (age)")) %>%
+  rename(c(pvalue=(pvalues_smooth_HC_main)))%>%
+  mutate(pvalue=as.numeric(pvalue)) %>%
+  mutate(pvalue1=pvalue) %>%
+  add_column(beta="")%>%
+  add_column(category="")%>%
+  add_column(lci="") %>%
+  add_column(uci="")
+
+pvalues_smooth_HC_main_df$pvalue <-  format(round(pvalues_smooth_HC_main_df$pvalue, digits=2), nsmall=2)
+
+pvalues_smooth_HC_main_df <- pvalues_smooth_HC_main_df %>%
+  mutate(pvalue1=case_when((pvalue1<0.00001) ~ "<0.0001",
+                           (pvalue1<0.001)~ "<0.001",
+                           (pvalue1<0.01)~ "<0.01")) 
+
+pvalues_smooth_HC_main_df$pvalue1 <- (ifelse(is.na(pvalues_smooth_HC_main_df$pvalue1), 
+                                             pvalues_smooth_HC_main_df$pvalue, pvalues_smooth_HC_main_df$pvalue1))
+pvalues_smooth_HC_main_df <- pvalues_smooth_HC_main_df%>%
+  select(-one_of('pvalue')) %>%
+  rename("pvalue"="pvalue1") 
+
+rowinfo = c("Smooth variables", "", "", "", "", "")
+ow <- rbind(rowinfo,pvalues_smooth_HC_main_df)
+
+HC <- rbind(HC_GAM3, ow)
+
+   M_HC.Z_gt <- HC %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci),
+                  ) %>%
+     tab_source_note(source_note = "n=2,961")  %>%
+   tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(rows = 10)) %>%
+  tab_options(table.width = pct(25), data_row.padding = px(2),   table.font.size = 12,
+              column_labels.font.weight = "bold",  row_group.font.weight  = "bold",
+              heading.title.font.size = 14, heading.subtitle.font.size = 14
+  )
+    M_HC.Z_gt
+    
+HC_z_estimates_flu_gt <- M_HC.Z_gt%>%
+  gtsave(here("outputs/tables/suppl_data/primiparous_sensitivity", "M_HC.Z_estimates_flu_or_syph_primi.docx"))
+```
+
+#### Adjusting for gestational age
+```{r}
+MHC.Z.GA2 <- gam(head_circ_perturb_Z_GA ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother)+flu_or_syph +sex+morphology +civil_status_cat2+Lausanne, data=laus4_livebirths_primi)
+  summary(MHC.Z.GA2)
+gam.check(MHC.Z.GA2) 
+concurvity(MHC.Z.GA2)
+ nobs(MHC.Z.GA2) #2953
+```
+
+##### Summary table
+```{r}
+HC_GAM_mod_adj_GA <- round(head(estimates_GAM_cont(MHC.Z.GA2),9), 2)
+HC_GAMmod_adj_GA <- HC_GAM_mod_adj_GA %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+HC_GAMmod_adj_GA$pvalue <-  format(round(HC_GAMmod_adj_GA$pvalue, digits=2), nsmall=2)
+HC_GAMmod_adj_GA <- HC_GAMmod_adj_GA%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+HC_GAMmod_adj_GA$pvalue1 <- (ifelse(is.na(HC_GAMmod_adj_GA$pvalue1),    HC_GAMmod_adj_GA$pvalue,  HC_GAMmod_adj_GA$pvalue1))
+HC_GAMmod_adj_GA <- HC_GAMmod_adj_GA %>%
+  select(-one_of('pvalue'))  
+HC_GAM3_adj_GA <- HC_GAMmod_adj_GA %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  HC_GAM3_adj_GA['Parameters'] <- c("intercept", 
+                            "Disease during pregnancy (ref: none)"," ",
+                             "Sex (ref: male)",
+                            "Morphology (ref: neither)", "", 
+                            "Civil status (ref: married)",
+                            "Lausanne (ref: yes)", ""
+                            )
+  HC_GAM3_adj_GA['category'] <- c(" ",
+                          "influenza","syphilis",
+                             "female", 
+                            "Obese", "Thin",
+                            "single or missing",
+                           "no", "unsure")
+    HC_GAM3_adj_GA<-HC_GAM3_adj_GA[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+pvalues_smooth_HC_adj_GA = summary(MHC.Z.GA2)
+pvalues_smooth_HC_adj_GA <- pvalues_smooth_HC_adj_GA$s.table[,4]
+pvalues_smooth_HC_adj_GA <- format(pvalues_smooth_HC_adj_GA, scientific=FALSE)
+
+pvalues_smooth_HC_adj_GA_main_df <- data.frame(pvalues_smooth_HC_adj_GA) %>%
+  dplyr::mutate(Parameters=c("Time", "Seasonality", "Maternal height (cm)", "Maternal years (age)")) %>%
+  rename(c(pvalue=(pvalues_smooth_HC_adj_GA)))%>%
+  mutate(pvalue=as.numeric(pvalue)) %>%
+  mutate(pvalue1=pvalue) %>%
+  add_column(beta="")%>%
+  add_column(category="")%>%
+  add_column(lci="") %>%
+  add_column(uci="")
+
+pvalues_smooth_HC_adj_GA_main_df$pvalue <-  format(round(pvalues_smooth_HC_adj_GA_main_df$pvalue, digits=2), nsmall=2)
+
+pvalues_smooth_HC_adj_GA_main_df <- pvalues_smooth_HC_adj_GA_main_df %>%
+  mutate(pvalue1=case_when((pvalue1<0.00001) ~ "<0.0001",
+                           (pvalue1<0.001)~ "<0.001",
+                           (pvalue1<0.01)~ "<0.01")) 
+
+pvalues_smooth_HC_adj_GA_main_df$pvalue1 <- (ifelse(is.na(pvalues_smooth_HC_adj_GA_main_df$pvalue1), 
+                                             pvalues_smooth_HC_adj_GA_main_df$pvalue, pvalues_smooth_HC_adj_GA_main_df$pvalue1))
+pvalues_smooth_HC_adj_GA_main_df <- pvalues_smooth_HC_adj_GA_main_df%>%
+  select(-one_of('pvalue')) %>%
+  rename("pvalue"="pvalue1") 
+
+rowinfo = c("Smooth variables", "", "", "", "", "")
+ow_adj_GA <- rbind(rowinfo,pvalues_smooth_HC_adj_GA_main_df)
+
+HC_adj_GA <- rbind(HC_GAM3_adj_GA, ow_adj_GA)
+
+   MHC.Z.GA_gt <- HC_adj_GA %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci),
+                  ) %>%
+     tab_source_note(source_note = "n=2,953")  %>%
+   tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(rows = 10)) %>%
+  tab_options(table.width = pct(18), data_row.padding = px(2),   table.font.size = 12,
+              column_labels.font.weight = "bold",  row_group.font.weight  = "bold",
+              heading.title.font.size = 14, heading.subtitle.font.size = 14
+  )
+    MHC.Z.GA_gt
+    
+HC_estimates_flu_adj_GA_gt <- MHC.Z.GA_gt%>%
+  gtsave(here("outputs/tables/suppl_data/primiparous_sensitivity", "M_HC.Z.GA_estimates_flu_or_syph_adj_GA_primi.docx"))
+```
+
+# Gestational age
+```{r}
+M_GA<- gam(GA_weeks_corrected ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+sex+morphology +civil_status_cat2+Lausanne, data=laus4_livebirths_primi)
+  summary(M_GA)
+  gam.check(M_GA)
+  concurvity(M_GA)
+nobs(M_GA) #n=2973
+```
+
+## Summary table
+```{r}
+GA_GAM_mod <- round(head(estimates_GAM_cont(M_GA),9), 2)
+GA_GAMmod <- GA_GAM_mod %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+GA_GAMmod$pvalue <-  format(round(GA_GAMmod$pvalue, digits=2), nsmall=2)
+GA_GAMmod <- GA_GAMmod%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+GA_GAMmod$pvalue1 <- (ifelse(is.na(GA_GAMmod$pvalue1),    GA_GAMmod$pvalue,  GA_GAMmod$pvalue1))
+GA_GAMmod <- GA_GAMmod %>%
+  select(-one_of('pvalue'))  
+GA_GAM3 <- GA_GAMmod %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  GA_GAM3['Parameters'] <- c("intercept", 
+                            "Disease during pregnancy (ref: no)"," ", 
+                            "Sex (ref: male)",
+                            "Morphology (ref: neither)", "", 
+                            "Civil status (ref: married)",
+                            "Lausanne (ref: yes)", ""
+                            )
+  GA_GAM3['category'] <- c(" ",
+                          "influenza","syphilis",  
+                            "female", 
+                            "Obese", "Thin",
+                            "single or missing",
+                           "no", "unsure")
+    GA_GAM3<-GA_GAM3[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+pvalues_smooth_GA_main = summary(M_GA)
+pvalues_smooth_GA_main <- pvalues_smooth_GA_main$s.table[,4]
+pvalues_smooth_GA_main <- format(pvalues_smooth_GA_main, scientific=FALSE)
+
+pvalues_smooth_GA_main_df <- data.frame(pvalues_smooth_GA_main) %>%
+  dplyr::mutate(Parameters=c("Time", "Seasonality", "Maternal height (cm)", "Maternal years (age)")) %>%
+  rename(c(pvalue=(pvalues_smooth_GA_main)))%>%
+  mutate(pvalue=as.numeric(pvalue)) %>%
+  mutate(pvalue1=pvalue) %>%
+  add_column(beta="")%>%
+  add_column(category="")%>%
+  add_column(lci="") %>%
+  add_column(uci="")
+
+pvalues_smooth_GA_main_df$pvalue <-  format(round(pvalues_smooth_GA_main_df$pvalue, digits=2), nsmall=2)
+
+pvalues_smooth_GA_main_df <- pvalues_smooth_GA_main_df %>%
+  mutate(pvalue1=case_when((pvalue1<0.00001) ~ "<0.0001",
+                           (pvalue1<0.001)~ "<0.001",
+                           (pvalue1<0.01)~ "<0.01")) 
+
+pvalues_smooth_GA_main_df$pvalue1 <- (ifelse(is.na(pvalues_smooth_GA_main_df$pvalue1), 
+                                             pvalues_smooth_GA_main_df$pvalue, pvalues_smooth_GA_main_df$pvalue1))
+pvalues_smooth_GA_main_df <- pvalues_smooth_GA_main_df%>%
+  select(-one_of('pvalue')) %>%
+  rename("pvalue"="pvalue1") 
+
+rowinfo = c("Smooth variables", "", "", "", "", "")
+ow <- rbind(rowinfo,pvalues_smooth_GA_main_df)
+
+GA <- rbind(GA_GAM3, ow)
+
+   M_GA_gt <- GA %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci),
+                  ) %>%
+     tab_source_note(source_note = "n=2,973")  %>%
+   tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(rows = 10)) %>%
+  tab_options(table.width = pct(25), data_row.padding = px(2),   table.font.size = 12,
+              column_labels.font.weight = "bold",  row_group.font.weight  = "bold",
+              heading.title.font.size = 14, heading.subtitle.font.size = 14
+  )
+    M_GA_gt
+    
+GA_estimates_flu_gt <- M_GA_gt%>%
+  gtsave(here("outputs/tables/suppl_data/primiparous_sensitivity", "M_GA_estimates_flu_or_syph_primi.docx"))
+```
