@@ -31,6 +31,64 @@ mat_charc_had_flu_syph %>%
 
 
 
+# Maternal characteristics of those infected by flu : with p values####
+mat_charc_had_flu_pval <- laus4_graph %>%
+  filter(flu_or_syph!="syphilis") %>%
+  select(Flu_in_pregn_and_in_pandemic,age_mother, height,
+         civil_status_cat2, parity_cat2, Lausanne,  
+         morphology,Goitre, rickets,
+         hisco_class_3) %>%  
+  gtsummary::tbl_summary(by=Flu_in_pregn_and_in_pandemic,
+                         statistic = list(
+                           c("age_mother", "height") ~ "{mean} ({sd})",
+                           c("civil_status_cat2", "parity_cat2",'Lausanne',
+                             'morphology', "Goitre", "rickets",
+                             'hisco_class_3') ~ "{n} ({p}%)"
+                         ),
+                         digits = list(
+                           c("civil_status_cat2","parity_cat2",'Lausanne',
+                             'morphology',"Goitre", "rickets",
+                             'hisco_class_3') ~ 0,
+                           c("age_mother", "height") ~ 1),
+                         missing_text = "missing"
+  )%>%
+  gtsummary::modify_header(label ~ "**Variable**") %>%
+  add_p()
+mat_charc_had_flu_pval
+
+mat_charc_had_flu_pval %>%
+  gtsummary::as_gt() %>%
+  gtsave(here("outputs/tables/suppl_data", "mat_characteristics_infected_flu_pval.docx"))
+
+# Maternal characteristics of those with positive syphilis test : with p values####
+mat_charc_had_syph_pval <- laus4_graph %>%
+  filter(flu_or_syph!="influenza") %>%
+  select(Syphilis_2,age_mother, height,
+         civil_status_cat2, parity_cat2, Lausanne,  
+         morphology,Goitre, rickets,
+         hisco_class_3) %>%  
+  gtsummary::tbl_summary(by=Syphilis_2,
+                         statistic = list(
+                           c("age_mother", "height") ~ "{mean} ({sd})",
+                           c("civil_status_cat2", "parity_cat2",'Lausanne',
+                             'morphology', "Goitre", "rickets",
+                             'hisco_class_3') ~ "{n} ({p}%)"
+                         ),
+                         digits = list(
+                           c("civil_status_cat2","parity_cat2",'Lausanne',
+                             'morphology',"Goitre", "rickets",
+                             'hisco_class_3') ~ 0,
+                           c("age_mother", "height") ~ 1),
+                         missing_text = "missing"
+  )%>%
+  gtsummary::modify_header(label ~ "**Variable**") %>%
+  add_p()
+mat_charc_had_syph_pval
+
+mat_charc_had_syph_pval %>%
+  gtsummary::as_gt() %>%
+  gtsave(here("outputs/tables/suppl_data", "mat_characteristics_infected_syph_pval.docx"))
+
 
 
 
@@ -204,80 +262,3 @@ mat_flu_or_syph_characteristics2_gt %>%
 mat_flu_characteristics2_gt %>%
   gtsave(here("output/tables/description_of_the_population", "mat_characteristics_flu_or_syph_infection.docx"))
   
-  
-# Maternal characteristics of those who had flu ####
-mat_charc_had_flu <- pandemy %>%
-  select(Grippe_during_pregn_3,age_mother, height,
-         civil_status_cat2, parity_cat2, Lausanne,  
-         morphology,
-         hisco_class_3) %>%  
-  gtsummary::tbl_summary(by=Grippe_during_pregn_3,
-                         statistic = list(
-                           c("age_mother", "height") ~ "{mean} ({sd})",
-                           c("civil_status_cat2", "parity_cat2",'Lausanne',
-                             'morphology', 
-                             'hisco_class_3') ~ "{n} ({p}%)"
-                         ),
-                         digits = list(
-                           c("civil_status_cat2","parity_cat2",'Lausanne',
-                             'morphology',
-                             'hisco_class_3') ~ 0,
-                           c("age_mother", "height") ~ 1),
-                         # label = grade ~ "Tumor Grade",
-                         missing= "no"
-  )%>%
-  add_p(pvalue_fun = ~ style_pvalue(.x, digits = 2)) %>%
-  gtsummary::modify_header(label ~ "**Variable**") 
-mat_charc_had_flu
-
-
-mat_charc_had_flu %>%
-  gtsummary::as_gt() %>%
-  gtsave(here("output/tables/description_of_the_population", "mat_characteristics_tested_had_flu.html")) 
-
-mat_charc_had_flu %>%
-  gtsummary::as_gt() %>%
-  gtsave(here("output/tables/description_of_the_population", "mat_characteristics_tested_had_flu.docx"))
-
-
-
-
-# Maternal characteristics of those who were TESTED for syphilis####
-attr(lausgraph$NEWTestDone, 'levels')<- c("no", "yes")
-
-tab_mat_tested_for_syph2 <- lausgraph %>%
-  filter(!is.na(NEWTestDone)) 
-
-
-mat_charc_tested_for_syph <- tab_mat_tested_for_syph2 %>%
-  select(NEWTestDone,age_mother, height,
-         civil_status_cat2, parity_cat2, Lausanne,  
-         morphology,
-         hisco_class_3) %>%  
-  gtsummary::tbl_summary(by=NEWTestDone,
-                         statistic = list(
-                           c("age_mother", "height") ~ "{mean} ({sd})",
-                           c("civil_status_cat2", "parity_cat2",'Lausanne',
-                             'morphology', 
-                             'hisco_class_3') ~ "{n} ({p}%)"
-                         ),
-                         digits = list(
-                           c("civil_status_cat2","parity_cat2",'Lausanne',
-                             'morphology',
-                             'hisco_class_3') ~ 0,
-                           c("age_mother", "height") ~ 1),
-                         # label = grade ~ "Tumor Grade",
-                         missing= "no"
-  )%>%
-  add_p(pvalue_fun = ~ style_pvalue(.x, digits = 2)) %>%
-  gtsummary::modify_header(label ~ "**Variable**") 
-mat_charc_tested_for_syph
-
-
-mat_charc_tested_for_syph %>%
-  gtsummary::as_gt() %>%
-  gtsave(here("output/tables/description_of_the_population", "mat_characteristics_tested_for_syph.html")) 
-
-mat_charc_tested_for_syph %>%
-  gtsummary::as_gt() %>%
-  gtsave(here("output/tables/description_of_the_population", "mat_characteristics_tested_for_syph.docx"))
