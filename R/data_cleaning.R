@@ -178,7 +178,8 @@ laus1 <- laus1 %>%
   laus1 <- laus1 %>%
     group_by(GA_weeks_corrected) %>%
     mutate(Birthweight_Z_GA =(birthweight - mean(birthweight, na.rm=TRUE)) / sd(birthweight, na.rm=TRUE),
-           head_circ_perturb_Z_GA =(hc.perturbed - mean(hc.perturbed, na.rm=TRUE)) / sd(hc.perturbed, na.rm=TRUE)) %>%
+           head_circ_perturb_Z_GA =(hc.perturbed - mean(hc.perturbed, na.rm=TRUE)) / sd(hc.perturbed, na.rm=TRUE),
+           head_circ_Z_GA =(head_circ - mean(head_circ, na.rm=TRUE)) / sd(head_circ, na.rm=TRUE)) %>%
     ungroup()
 #maternal year of birth & menarche
 laus1 <- laus1 %>%
