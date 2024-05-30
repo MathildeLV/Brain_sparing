@@ -144,12 +144,14 @@ mod4a0<- gam(birthweight ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(
 mod4e<- gam(birthweight ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology, data=laus4_livebirths)
   AIC(mod4e)-AIC(mod4a0) 
   BIC(mod4e)-BIC(mod4a0) 
+  anova(mod4a0, mod4e, test="Chisq")
 # morphology improves model fit
 
 mod4f<- gam(birthweight ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2, data=laus4_livebirths)
   summary(mod4f)
   AIC(mod4f)-AIC(mod4e) 
   BIC(mod4f)-BIC(mod4e) 
+  anova(mod4e, mod4f, test="Chisq")
 # civil status improves model fit BASED ON AIC ONLY
 # BIC a bit more conservative
   
@@ -165,12 +167,14 @@ mod4h<- gam(birthweight ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(a
   AIC(mod4h)-AIC(mod4g) 
   BIC(mod4h)-BIC(mod4f) 
   BIC(mod4h)-BIC(mod4g) 
+  anova(mod4f, mod4h, test="Chisq")
 # Putting both civil status and Lausanne variables improve model fit, based on AIC but not on BIC.
   
 mod4i<- gam(birthweight ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne+hisco_class_3, data=laus4_livebirths)
   summary(mod4i)
   AIC(mod4i)-AIC(mod4h) 
-  BIC(mod4i)-BIC(mod4h) 
+  BIC(mod4i)-BIC(mod4h)
+  anova(mod4h, mod4i, test="Chisq")
 #hisco class does not improve the model fit
   
 mod4j<- gam(birthweight ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+hisco_class_3, data=laus4_livebirths)
@@ -182,13 +186,15 @@ mod4k<- gam(birthweight ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(a
   summary(mod4k)
   AIC(mod4k)-AIC(mod4h)
   BIC(mod4k)-BIC(mod4h)
-  # Goitre variable does not improve the fit.
+  anova(mod4h, mod4k, test="Chisq")
+# Goitre variable does not improve the fit.
 
 mod4l<- gam(birthweight ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne+rickets, data=laus4_livebirths)
   summary(mod4l)
   AIC(mod4l)-AIC(mod4h)
   BIC(mod4l)-BIC(mod4h)
-  # Rickets variable does not improve the fit
+  anova(mod4h, mod4l, test="Chisq")
+ # Rickets variable does not improve the fit
 
 # --> mod4h best model.
 M_BW <- gam(birthweight ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne, data=laus4_livebirths)
@@ -2195,7 +2201,8 @@ This is among all births (live and stillbirths).
 # Reshape the data
 laus4_long_z_sex <- laus4 %>%
   filter(!is.na(sex)) %>%
-  gather(key = "Variable", value = "Value", head_circ_perturb_Z_sex2, Birthweight_Z_sex2)
+  gather(key = "Variable", value = "Value", head_circ_perturb_Z_sex2, Birthweight_Z_sex2) %>%
+  mutate(Syphilis_2=recode(Syphilis_2, "positive"= "yes"))
 
 # Find the range of y-axis values across all boxplots
 y_range_Z_sex_laus4 <- range(laus4_long_z_sex$Value)
@@ -2209,7 +2216,7 @@ plot_flu_BW_HC_sex_zscore <- ggplot(laus4_long_z_sex, aes(x = Flu_in_pregn_and_i
     .width = 0,
     point_colour = NA
   ) +
-  facet_grid(~Variable, scales = "fixed", labeller = labeller(Variable = c("Birthweight_Z_sex2" = "Birthweight", "head_circ_perturb_Z_sex2" = "Head circumference")), space = "free_x") +
+  facet_grid(~Variable, scales = "fixed", labeller = labeller(Variable = c("Birthweight_Z_sex2" = "Birth weight", "head_circ_perturb_Z_sex2" = "Head circumference")), space = "free_x") +
   theme_bw() +
   labs(x = "Influenza", y = "sex Z-score") +
   scale_fill_manual(values = c("no" = "gainsboro", "yes" = "lightcyan2")) +
@@ -2222,7 +2229,7 @@ plot_flu_BW_HC_sex_zscore <- ggplot(laus4_long_z_sex, aes(x = Flu_in_pregn_and_i
     position = position_nudge(0),
     size = 0.5
   ) +
-  geom_hline(yintercept = 0, linetype = "dashed", size = 0.7, colour = "#0072B2") +
+  geom_hline(yintercept = 0, linetype = "dashed", linewidth = 0.7, colour = "#0072B2") +
   geom_hline(data = right_data, aes(yintercept = -2), linetype = "dashed", size = 0.7, colour = "#D55E00")+
    custom_theme()+
   NULL 
@@ -2239,10 +2246,10 @@ plot_syph_BW_HC_sex_zscore <- ggplot(laus4_long_z_sex, aes(x = Syphilis_2, y = V
     .width = 0,
     point_colour = NA
   ) +
-  facet_grid(~Variable, scales = "fixed", labeller = labeller(Variable = c("Birthweight_Z_sex2" = "Birthweight", "head_circ_perturb_Z_sex2" = "Head circumference")), space = "free_x") +
+  facet_grid(~Variable, scales = "fixed", labeller = labeller(Variable = c("Birthweight_Z_sex2" = "Birth weight", "head_circ_perturb_Z_sex2" = "Head circumference")), space = "free_x") +
   theme_bw() +
   labs(x = "Syphilis", y = "sex Z-score") +
-  scale_fill_manual(values = c("no" = "gainsboro", "positive" = "lightcyan2")) +
+  scale_fill_manual(values = c("no" = "gainsboro", "yes" = "lightcyan2")) +
   coord_cartesian(ylim = c(-5, 3)) +
   guides(fill = FALSE) +
   geom_boxplot(
@@ -2266,7 +2273,7 @@ infections_BW_HC_sex_Z_score <- egg::ggarrange(plot_flu_BW_HC_sex_zscore,
                                     labels = c("A", "B"),
                                     ncol = 2, nrow = 1) 
 # save 13*5.5
-ggsave("output/graphs/brain_sparing/infections_head_circ_birthweight_sexzscore.pdf", infections_BW_HC_sex_Z_score, width = 14, height = 5.5, units = "in", device = "pdf")
+ggsave("outputs/graphs/brain_sparing/infections_head_circ_birthweight_sexzscore.pdf", infections_BW_HC_sex_Z_score, width = 14, height = 5.5, units = "in", device = "pdf")
 ```
 
 ## By stillbirth status
@@ -2306,11 +2313,11 @@ plot_syph_BW_HC_sex_zscore_stillbirth <- ggplot(laus4_long_z_sex, aes(x = Syphil
     .width = 0,
     point_colour = NA
   ) +
-  facet_grid(Variable~stillbirth, scales = "fixed", labeller = labeller(Variable = c("Birthweight_Z_sex2" = "Birthweight", "head_circ_perturb_Z_sex2" = "Head circumference")), space = "free_x") +
+  facet_grid(Variable~stillbirth, scales = "fixed", labeller = labeller(Variable = c("Birthweight_Z_sex2" = "Birth weight", "head_circ_perturb_Z_sex2" = "Head circumference")), space = "free_x") +
   theme_bw() +
   custom_theme()+
   labs(x = "Syphilis", y = "sex Z-score") +
-  scale_fill_manual(values = c("no" = "gainsboro", "positive" = "lightcyan2")) +
+  scale_fill_manual(values = c("no" = "gainsboro", "yes" = "lightcyan2")) +
   coord_cartesian(ylim = c(-5, 3)) +
   guides(fill = FALSE) +
   geom_boxplot(
@@ -2332,7 +2339,7 @@ infections_BW_HC_sex_Z_score_stillbirth <- egg::ggarrange(plot_flu_BW_HC_sex_zsc
           labels = c("A", "B"),
           ncol = 2, nrow = 1) 
 
-ggsave("output/graphs/brain_sparing/infections_head_circ_birthweight_stillbirth_sexzscore.pdf", infections_BW_HC_sex_Z_score_stillbirth, width = 16.25, height = 7.25, units = "in", device = "pdf")
+ggsave("outputs/graphs/brain_sparing/infections_head_circ_birthweight_stillbirth_sexzscore.pdf", infections_BW_HC_sex_Z_score_stillbirth, width = 16.25, height = 7.25, units = "in", device = "pdf")
 ```
 
 
