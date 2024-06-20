@@ -181,6 +181,14 @@ laus1 <- laus1 %>%
            head_circ_perturb_Z_GA =(hc.perturbed - mean(hc.perturbed, na.rm=TRUE)) / sd(hc.perturbed, na.rm=TRUE),
            head_circ_Z_GA =(head_circ - mean(head_circ, na.rm=TRUE)) / sd(head_circ, na.rm=TRUE)) %>%
     ungroup()
+  
+# with GA based on LMP
+  laus1 <- laus1 %>%
+    group_by(GA_weeks) %>%
+    mutate(Birthweight_Z_GA_LMP =(birthweight - mean(birthweight, na.rm=TRUE)) / sd(birthweight, na.rm=TRUE),
+           head_circ_perturb_Z_GA_LMP =(hc.perturbed - mean(hc.perturbed, na.rm=TRUE)) / sd(hc.perturbed, na.rm=TRUE)) %>%
+    ungroup()
+  
 #maternal year of birth & menarche
 laus1 <- laus1 %>%
   mutate(mat_year_of_birth =birthyear - (round((age_mother), digits=0)),
