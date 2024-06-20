@@ -20,7 +20,7 @@ table(laus4$GA_weeks, useNA = "a")
 table(laus4$GA_weeks_cat, useNA = "a")
 table(laus4$age_baby_cat, useNA = "a")
 table(laus4$age_baby_cont2, useNA = "a")
-laus4 <- laus %>%
+lausx <- laus %>%
   mutate(age_baby_cat = cut(as.numeric(age_baby_cont2), 
                            breaks=c(10, 15, 20, 25, 30, 33, 37, 41, 44, 52), 
                            include.lowest = TRUE,  right = FALSE),
@@ -31,34 +31,34 @@ laus4 <- laus %>%
                             breaks=c(10, 15, 20, 25, 30, 33, 37, 41, 44, 52), 
                             include.lowest = TRUE,  right = FALSE),
          GA_weeks_cat_sp = cut(as.numeric(GA_weeks), 
-                                      breaks=c(22, 25, 30, 33, 37, 41, 52), 
+                                      breaks=c(10, 25, 30, 33, 37, 41, 52), 
                                       include.lowest = TRUE,  right = FALSE),
          age_baby_cat_sp = cut(as.numeric(age_baby_cont2), 
-                            breaks=c(22, 25, 30, 33, 37, 41, 52), 
+                            breaks=c(10, 25, 30, 33, 37, 41, 52), 
                             include.lowest = TRUE,  right = FALSE))
-table(laus4$GA_weeks_cat, laus4$age_baby_cat, useNA = "a")
+table(lausx$GA_weeks_cat, lausx$age_baby_cat, useNA = "a")
 
-table(laus4$age_baby_cat, useNA = "a")
-table(laus4$GA_weeks_cat_corrected, useNA = "a") 
+table(lausx$age_baby_cat, useNA = "a")
+table(lausx$GA_weeks_cat_corrected, useNA = "a") 
 
-a <- table(laus4$GA_weeks_cat, laus4$age_baby_cat, useNA = "a") 
+a <- table(lausx$GA_weeks_cat, lausx$age_baby_cat, useNA = "a") 
 openxlsx::write.xlsx(a, file=("outputs/GA_weeks.xlsx"), rowNames = FALSE)
 
-d <- round(prop.table(table(laus4$GA_weeks_cat, laus4$age_baby_cat))*100,2)
+d <- round(prop.table(table(lausx$GA_weeks_cat, lausx$age_baby_cat))*100,2)
 d
 openxlsx::write.xlsx(d, file=("outputs/GA_weeks_prop3.xlsx"), rowNames = FALSE)
 
 
-e <- round(prop.table(table(laus4$GA_weeks_cat_corrected))*100,2)
+e <- round(prop.table(table(lausx$GA_weeks_cat_corrected))*100,2)
 e
 openxlsx::write.xlsx(e, file=("outputs/GA_weeks_corrected.xlsx"), rowNames = FALSE)
 
 
 # Cohen's Kappa: to measure concordance
-table(laus4$GA_weeks_cat_sp, useNA = "a")
-table(laus4$age_baby_cat_sp, useNA = "a")
-table(laus4$GA_weeks_cat_sp, laus4$age_baby_cat_sp)
-b <- table(laus4$GA_weeks_cat_sp, laus4$age_baby_cat_sp)
+table(lausx$GA_weeks_cat_sp, useNA = "a")
+table(lausx$age_baby_cat_sp, useNA = "a")
+table(lausx$GA_weeks_cat_sp, lausx$age_baby_cat_sp)
+b <- table(lausx$GA_weeks_cat_sp, lausx$age_baby_cat_sp)
 psych::cohen.kappa(b)
-openxlsx::write.xlsx(table(laus4$GA_weeks_cat_sp, laus4$age_baby_cat_sp, useNA = "a"), 
+openxlsx::write.xlsx(table(lausx$GA_weeks_cat_sp, lausx$age_baby_cat_sp, useNA = "a"), 
                      file=("outputs/GA_weeks_sp.xlsx"), rowNames = FALSE)
