@@ -1,0 +1,524 @@
+---
+title: "Infection during pregnancy and pregancy outcomes and anthropometrics, UCL 2023-24"
+author: "Mathilde Le Vu, Jonathan Wells, Mario Cortina-Borja"
+date: "2023-12-05"
+html_document: 
+output:
+  rmdformats::robobook:
+    code_folding: show
+    self_contained: true
+    highlight: pygments
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+
+# Anthropometric parameters
+## Birthweight
+#### M_BW: Livebirths
+#### Adjusting for gestational age
+```{r}
+MBW.Z.GA2<- gam(Birthweight_Z_GA_LMP ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother)+  flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne, data=laus4_livebirths, subset=(GA_weeks >=22))
+  summary(MBW.Z.GA2)
+  BIC(MBW.Z.GA2)
+  gam.check(MBW.Z.GA2)
+  concurvity(MBW.Z.GA2)
+```
+
+##### Summary table
+```{r}
+BW_GAM_mod_adj_GA <- round(head(estimates_GAM_cont(MBW.Z.GA2),11), 2)
+BW_GAM_mod_adj_GA <- BW_GAM_mod_adj_GA %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+BW_GAM_mod_adj_GA$pvalue <-  format(round(BW_GAM_mod_adj_GA$pvalue, digits=2), nsmall=2)
+BW_GAM_mod_adj_GA <- BW_GAM_mod_adj_GA%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+BW_GAM_mod_adj_GA$pvalue1 <- (ifelse(is.na(BW_GAM_mod_adj_GA$pvalue1),    BW_GAM_mod_adj_GA$pvalue,  BW_GAM_mod_adj_GA$pvalue1))
+BW_GAM_mod_adj_GA <- BW_GAM_mod_adj_GA %>%
+  select(-one_of('pvalue'))  
+BW_GAM3_adj_GA <- BW_GAM_mod_adj_GA %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  BW_GAM3_adj_GA['Parameters'] <- c("intercept", 
+                            "Disease during pregnancy (ref: none)"," ",
+                           "Parity (ref: 1)", " ", "Sex (ref: male)",
+                            "Morphology (ref: neither)", "", 
+                            "Civil status (ref: married)",
+                            "Lausanne (ref: yes)", ""
+                            )
+  BW_GAM3_adj_GA['category'] <- c(" ",
+                          "influenza","syphilis",
+                            "2", ">2", "female",
+                            "Obese", "Thin",
+                            "single or missing",
+                           "no", "unsure")
+    BW_GAM3_adj_GA<-BW_GAM3_adj_GA[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+pvalues_smooth_BW_adj_GA = summary(MBW.Z.GA2)
+pvalues_smooth_BW_adj_GA <- pvalues_smooth_BW_adj_GA$s.table[,4]
+pvalues_smooth_BW_adj_GA <- format(pvalues_smooth_BW_adj_GA, scientific=FALSE)
+
+pvalues_smooth_BW_adj_GA_main_df <- data.frame(pvalues_smooth_BW_adj_GA) %>%
+  dplyr::mutate(Parameters=c("Time", "Seasonality", "Maternal height (cm)", "Maternal years (age)")) %>%
+  rename(c(pvalue=(pvalues_smooth_BW_adj_GA)))%>%
+  mutate(pvalue=as.numeric(pvalue)) %>%
+  mutate(pvalue1=pvalue) %>%
+  add_column(beta="")%>%
+  add_column(category="")%>%
+  add_column(lci="") %>%
+  add_column(uci="")
+
+pvalues_smooth_BW_adj_GA_main_df$pvalue <-  format(round(pvalues_smooth_BW_adj_GA_main_df$pvalue, digits=2), nsmall=2)
+
+pvalues_smooth_BW_adj_GA_main_df <- pvalues_smooth_BW_adj_GA_main_df %>%
+  mutate(pvalue1=case_when((pvalue1<0.00001) ~ "<0.0001",
+                           (pvalue1<0.001)~ "<0.001",
+                           (pvalue1<0.01)~ "<0.01")) 
+
+pvalues_smooth_BW_adj_GA_main_df$pvalue1 <- (ifelse(is.na(pvalues_smooth_BW_adj_GA_main_df$pvalue1), 
+                                             pvalues_smooth_BW_adj_GA_main_df$pvalue, pvalues_smooth_BW_adj_GA_main_df$pvalue1))
+pvalues_smooth_BW_adj_GA_main_df <- pvalues_smooth_BW_adj_GA_main_df%>%
+  select(-one_of('pvalue')) %>%
+  rename("pvalue"="pvalue1") 
+
+rowinfo = c("Smooth variables", "", "", "", "", "")
+ow_adj_BW_GA <- rbind(rowinfo,pvalues_smooth_BW_adj_GA_main_df)
+
+BW_adj_GA <- rbind(BW_GAM3_adj_GA, ow_adj_BW_GA)
+
+   MBW.Z.GA_gt <- BW_adj_GA %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci),
+                  ) %>%
+     tab_style(
+    style = list(
+      cell_fill(color = "#e0e0e0")
+    ),
+    locations = cells_body(rows=c(2,3,6,9,13,15))) %>%
+      tab_style(
+    style = list(
+      cell_fill(color = "#F2F0F0")),
+    locations = cells_body(rows=c(4,5,7,8,10,11,14,16))) %>%
+     tab_source_note(source_note = "n=7'533")  %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(rows = 12)) %>%
+  tab_options(table.width = pct(25), data_row.padding = px(2),   table.font.size = 12,
+              column_labels.font.weight = "bold",  row_group.font.weight  = "bold",
+              heading.title.font.size = 14, heading.subtitle.font.size = 14
+  )
+    MBW.Z.GA_gt
+    #pct 25
+BW_estimates_flu_adj_GA_gt <- MBW.Z.GA_gt%>%
+  gtsave(here("outputs/tables/suppl_data/models_with_GA_based_on_LMP", "M_BW.Z.GA_estimates_flu_or_syph_adj_GA_gt.html"))
+BW_estimates_flu_adj_GA_gt <- MBW.Z.GA_gt%>%
+  gtsave(here("outputs/tables/suppl_data/models_with_GA_based_on_LMP", "M_BW.Z.GA_estimates_flu_or_syph_adj_GA_gt.docx"))
+```
+
+
+#### Differentiating between live and stillbirths
+##### M_BW.Z.score.GA_stillbirth
+```{r}
+M_BW_Z_GA_sb<- glm(Birthweight_Z_GA_LMP ~sex+ flu_or_syph*stillbirth, data=laus4, subset=(GA_weeks>22))
+nobs(M_BW_Z_GA_sb)
+summary(M_BW_Z_GA_sb) #n 8050
+vif(M_BW_Z_GA_sb)
+```
+
+###### Quick summary table
+```{r}
+BW_GAM_flu_or_syph_mod <- round((estimates_cont(M_BW_Z_GA_sb)[c(1,3:7),]), 2)
+BW_GAMmod <- BW_GAM_flu_or_syph_mod %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+BW_GAMmod$pvalue <-  format(round(BW_GAMmod$pvalue, digits=2), nsmall=2)
+BW_GAMmod <- BW_GAMmod%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+BW_GAMmod$pvalue1 <- (ifelse(is.na(BW_GAMmod$pvalue1),    BW_GAMmod$pvalue,  BW_GAMmod$pvalue1))
+BW_GAMmod <- BW_GAMmod %>%
+  select(-one_of('pvalue'))  
+BW_GAM3 <- BW_GAMmod %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  BW_GAM3['Parameters'] <- c("intercept", "Disease during pregnancy (ref: none)","",
+                             "Stillbirth (ref no)", "Influenza: yes * stillbirth (ref no)","Syphilis: yes * stillbirth (ref no)")
+  BW_GAM3['category'] <- c("","influenza", "syphilis","yes", "stillbirth yes","stillbirth yes")
+  BW_GAM3<-BW_GAM3[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+       
+   BW_SB_GAM_gt <- BW_GAM3 %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci))%>%
+       tab_options(table.width = pct(25), data_row.padding = px(1)) %>%
+     tab_source_note(source_note = "n=8'050")
+    BW_SB_GAM_gt
+    
+M_BW.s_estimates_flu_gt <- BW_SB_GAM_gt%>%
+  gtsave(here("outputs/tables/suppl_data/models_with_GA_based_on_LMP/BW_HC_GA_interaction_stillbirth", "M_BW_Z_GA_sb_estimates_gt.html"))
+M_BW.s_estimates_flu_gt <- BW_SB_GAM_gt%>%
+  gtsave(here("outputs/tables/suppl_data/models_with_GA_based_on_LMP/BW_HC_GA_interaction_stillbirth", "M_BW_Z_GA_sb_estimates_gt.docx"))
+```
+
+
+## Head circumference
+#### Adjusting for gestational age
+```{r}
+MHC.Z.GA2 <- gam(head_circ_perturb_Z_GA_LMP ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother)+flu_or_syph +parity_cat2+sex+morphology +civil_status_cat2+Lausanne, data=laus4_livebirths, subset = (GA_weeks>=22))
+  summary(MHC.Z.GA2)
+  # set.seed(1234)
+  # gam.check(MHC.Z.GA, k.rep=2000)
+gam.check(MHC.Z.GA2) 
+concurvity(MHC.Z.GA2)
+ BIC(MHC.Z.GA2)
+ nobs(MHC.Z.GA2)
+```
+
+##### Summary table
+```{r}
+HC_GAM_mod_adj_GA <- round(head(estimates_GAM_cont(MHC.Z.GA2),11), 2)
+HC_GAMmod_adj_GA <- HC_GAM_mod_adj_GA %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+HC_GAMmod_adj_GA$pvalue <-  format(round(HC_GAMmod_adj_GA$pvalue, digits=2), nsmall=2)
+HC_GAMmod_adj_GA <- HC_GAMmod_adj_GA%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+HC_GAMmod_adj_GA$pvalue1 <- (ifelse(is.na(HC_GAMmod_adj_GA$pvalue1),    HC_GAMmod_adj_GA$pvalue,  HC_GAMmod_adj_GA$pvalue1))
+HC_GAMmod_adj_GA <- HC_GAMmod_adj_GA %>%
+  select(-one_of('pvalue'))  
+HC_GAM3_adj_GA <- HC_GAMmod_adj_GA %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  HC_GAM3_adj_GA['Parameters'] <- c("intercept", 
+                            "Disease during pregnancy (ref: none)"," ",
+                            "Parity (ref: 1)", " ", "Sex (ref: male)",
+                            "Morphology (ref: neither)", "", 
+                            "Civil status (ref: married)",
+                            "Lausanne (ref: yes)", ""
+                            )
+  HC_GAM3_adj_GA['category'] <- c(" ",
+                          "influenza","syphilis",
+                            "2", ">2", "female", 
+                            "Obese", "Thin",
+                            "single or missing",
+                           "no", "unsure")
+    HC_GAM3_adj_GA<-HC_GAM3_adj_GA[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+pvalues_smooth_HC_adj_GA = summary(MHC.Z.GA2)
+pvalues_smooth_HC_adj_GA <- pvalues_smooth_HC_adj_GA$s.table[,4]
+pvalues_smooth_HC_adj_GA <- format(pvalues_smooth_HC_adj_GA, scientific=FALSE)
+
+pvalues_smooth_HC_adj_GA_main_df <- data.frame(pvalues_smooth_HC_adj_GA) %>%
+  dplyr::mutate(Parameters=c("Time", "Seasonality", "Maternal height (cm)", "Maternal years (age)")) %>%
+  rename(c(pvalue=(pvalues_smooth_HC_adj_GA)))%>%
+  mutate(pvalue=as.numeric(pvalue)) %>%
+  mutate(pvalue1=pvalue) %>%
+  add_column(beta="")%>%
+  add_column(category="")%>%
+  add_column(lci="") %>%
+  add_column(uci="")
+
+pvalues_smooth_HC_adj_GA_main_df$pvalue <-  format(round(pvalues_smooth_HC_adj_GA_main_df$pvalue, digits=2), nsmall=2)
+
+pvalues_smooth_HC_adj_GA_main_df <- pvalues_smooth_HC_adj_GA_main_df %>%
+  mutate(pvalue1=case_when((pvalue1<0.00001) ~ "<0.0001",
+                           (pvalue1<0.001)~ "<0.001",
+                           (pvalue1<0.01)~ "<0.01")) 
+
+pvalues_smooth_HC_adj_GA_main_df$pvalue1 <- (ifelse(is.na(pvalues_smooth_HC_adj_GA_main_df$pvalue1), 
+                                             pvalues_smooth_HC_adj_GA_main_df$pvalue, pvalues_smooth_HC_adj_GA_main_df$pvalue1))
+pvalues_smooth_HC_adj_GA_main_df <- pvalues_smooth_HC_adj_GA_main_df%>%
+  select(-one_of('pvalue')) %>%
+  rename("pvalue"="pvalue1") 
+
+rowinfo = c("Smooth variables", "", "", "", "", "")
+ow_adj_GA <- rbind(rowinfo,pvalues_smooth_HC_adj_GA_main_df)
+
+HC_adj_GA <- rbind(HC_GAM3_adj_GA, ow_adj_GA)
+
+   MHC.Z.GA_gt <- HC_adj_GA %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci),
+                  ) %>%
+     tab_style(
+    style = list(
+      cell_fill(color = "#e0e0e0")
+    ),
+    locations = cells_body(rows=c(2,3,6,9,13,15))) %>%
+      tab_style(
+    style = list(
+      cell_fill(color = "#F2F0F0")),
+    locations = cells_body(rows=c(4,5,7,8,10,11,14,16))) %>%
+     tab_source_note(source_note = "n=7'504")  %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(rows = 12)) %>%
+  tab_options(table.width = pct(18), data_row.padding = px(2),   table.font.size = 12,
+              column_labels.font.weight = "bold",  row_group.font.weight  = "bold",
+              heading.title.font.size = 14, heading.subtitle.font.size = 14
+  )
+    MHC.Z.GA_gt
+    
+HC_estimates_flu_adj_GA_gt <- MHC.Z.GA_gt%>%
+  gtsave(here("outputs/tables/suppl_data/models_with_GA_based_on_LMP", "M_HC.Z.GA_estimates_flu_or_syph_adj_GA_gt.html"))
+HC_estimates_flu_adj_GA_gt <- MHC.Z.GA_gt%>%
+  gtsave(here("outputs/tables/suppl_data/models_with_GA_based_on_LMP", "M_HC.Z.GA_estimates_flu_or_syph_adj_GA_gt.docx"))
+```
+
+
+##### M_HC_Z.score_GA_stillbirth
+```{r}
+M_HC_Z_GA_sb <- glm(head_circ_perturb_Z_GA_LMP ~sex+ flu_or_syph*stillbirth, data=laus4, subset = (GA_weeks>=22))
+summary(M_HC_Z_GA_sb)
+nobs(M_HC_Z_GA_sb)#n 7,924
+vif(M_HC_Z_GA_sb)
+```
+
+###### Quick summary table
+```{r}
+HC_GAM_syph_flu_mod <- round((estimates_cont(M_HC_Z_GA_sb)[c(1,3:7),]), 2)
+HC_GAMmod <- HC_GAM_syph_flu_mod %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+HC_GAMmod$pvalue <-  format(round(HC_GAMmod$pvalue, digits=2), nsmall=2)
+HC_GAMmod <- HC_GAMmod%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+HC_GAMmod$pvalue1 <- (ifelse(is.na(HC_GAMmod$pvalue1),    HC_GAMmod$pvalue,  HC_GAMmod$pvalue1))
+HC_GAMmod <- HC_GAMmod %>%
+  select(-one_of('pvalue'))  
+HC_GAM3 <- HC_GAMmod %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  HC_GAM3['Parameters'] <- c("intercept", 
+                             "Disease during pregnancy (ref: none)", 
+                             " ",
+                             "Stillbirth (ref no)", "Influenza: yes * stillbirth (ref no)", "Syphilis: yes * stillbirth (ref no)")
+  HC_GAM3['category'] <- c("","influenza", "syphilis", "yes","stillbirth yes","stillbirth yes")
+  HC_GAM3<-HC_GAM3[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+   HC_SB_GAM_flu_syph_gt <- HC_GAM3 %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci))%>%
+       tab_options(table.width = pct(25), data_row.padding = px(1)) %>%
+     tab_source_note(source_note = "n=7'924")
+    HC_SB_GAM_flu_syph_gt
+    # pct 20
+HC_estimates_flu_gt <- HC_SB_GAM_flu_syph_gt%>%
+  gtsave(here("outputs/tables/suppl_data/models_with_GA_based_on_LMP/BW_HC_GA_interaction_stillbirth", "M_HC_Z_GA_sb_gt_estimates.html"))
+HC_estimates_flu_gt <- HC_SB_GAM_flu_syph_gt%>%
+  gtsave(here("outputs/tables/suppl_data/models_with_GA_based_on_LMP/BW_HC_GA_interaction_stillbirth", "M_HC_Z_GA_sb_gt_estimates.docx"))
+```
+
+# Gestational age
+```{r}
+M_GA<- gam(GA_weeks ~ s(birthdate_num)+ s(day366, bs="cc") + s(height)+  s(age_mother) +flu_or_syph+parity_cat2+sex+morphology +civil_status_cat2+Lausanne, data=laus4_livebirths, subset=(GA_weeks>=22))
+  summary(M_GA)
+  gam.check(M_GA)
+  concurvity(M_GA)
+nobs(M_GA) #n=7538
+```
+
+## Summary table
+```{r}
+GA_GAM_mod <- round(head(estimates_GAM_cont(M_GA),11), 2)
+GA_GAMmod <- GA_GAM_mod %>%
+mutate(pvalue=as.numeric(pvalue)) %>%
+mutate(pvalue1=pvalue) 
+GA_GAMmod$pvalue <-  format(round(GA_GAMmod$pvalue, digits=2), nsmall=2)
+GA_GAMmod <- GA_GAMmod%>% 
+    mutate(pvalue1=case_when((pvalue1<0.0001)~ "<0.0001",
+                             (pvalue1<0.001)~ "<0.001")) 
+GA_GAMmod$pvalue1 <- (ifelse(is.na(GA_GAMmod$pvalue1),    GA_GAMmod$pvalue,  GA_GAMmod$pvalue1))
+GA_GAMmod <- GA_GAMmod %>%
+  select(-one_of('pvalue'))  
+GA_GAM3 <- GA_GAMmod %>%
+rename(pvalue=pvalue1) %>%
+    mutate_if(is.numeric, ~ format(round(., digits = 2), nsmall = 2))
+
+  GA_GAM3['Parameters'] <- c("intercept", 
+                            "Disease during pregnancy (ref: no)"," ", 
+                            "Parity (ref: 1)", " ", "Sex (ref: male)",
+                            "Morphology (ref: neither)", "", 
+                            "Civil status (ref: married)",
+                            "Lausanne (ref: yes)", ""
+                            )
+  GA_GAM3['category'] <- c(" ",
+                          "influenza","syphilis",  
+                            "2", ">2", "female", 
+                            "Obese", "Thin",
+                            "single or missing",
+                           "no", "unsure")
+    GA_GAM3<-GA_GAM3[, c('Parameters', "category", "beta", "lci","uci", "pvalue")]
+    
+pvalues_smooth_GA_main = summary(M_GA)
+pvalues_smooth_GA_main <- pvalues_smooth_GA_main$s.table[,4]
+pvalues_smooth_GA_main <- format(pvalues_smooth_GA_main, scientific=FALSE)
+
+pvalues_smooth_GA_main_df <- data.frame(pvalues_smooth_GA_main) %>%
+  dplyr::mutate(Parameters=c("Time", "Seasonality", "Maternal height (cm)", "Maternal years (age)")) %>%
+  rename(c(pvalue=(pvalues_smooth_GA_main)))%>%
+  mutate(pvalue=as.numeric(pvalue)) %>%
+  mutate(pvalue1=pvalue) %>%
+  add_column(beta="")%>%
+  add_column(category="")%>%
+  add_column(lci="") %>%
+  add_column(uci="")
+
+pvalues_smooth_GA_main_df$pvalue <-  format(round(pvalues_smooth_GA_main_df$pvalue, digits=2), nsmall=2)
+
+pvalues_smooth_GA_main_df <- pvalues_smooth_GA_main_df %>%
+  mutate(pvalue1=case_when((pvalue1<0.00001) ~ "<0.0001",
+                           (pvalue1<0.001)~ "<0.001",
+                           (pvalue1<0.01)~ "<0.01")) 
+
+pvalues_smooth_GA_main_df$pvalue1 <- (ifelse(is.na(pvalues_smooth_GA_main_df$pvalue1), 
+                                             pvalues_smooth_GA_main_df$pvalue, pvalues_smooth_GA_main_df$pvalue1))
+pvalues_smooth_GA_main_df <- pvalues_smooth_GA_main_df%>%
+  select(-one_of('pvalue')) %>%
+  rename("pvalue"="pvalue1") 
+
+rowinfo = c("Smooth variables", "", "", "", "", "")
+ow <- rbind(rowinfo,pvalues_smooth_GA_main_df)
+
+GA <- rbind(GA_GAM3, ow)
+
+   M_GA_gt <- GA %>%
+      gt()%>%
+      tab_spanner(label = "95% CI", columns = c(lci, uci),
+                  ) %>%
+     tab_style(
+    style = list(
+      cell_fill(color = "#e0e0e0")
+    ),
+    locations = cells_body(rows=c(2,3,6,9,13,15))) %>%
+      tab_style(
+    style = list(
+      cell_fill(color = "#F2F0F0")),
+    locations = cells_body(rows=c(4,5,7,8,10,11,14,16))) %>%
+     tab_source_note(source_note = "n=7'538")  %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(rows = 12)) %>%
+  tab_options(table.width = pct(25), data_row.padding = px(2),   table.font.size = 12,
+              column_labels.font.weight = "bold",  row_group.font.weight  = "bold",
+              heading.title.font.size = 14, heading.subtitle.font.size = 14
+  )
+    M_GA_gt
+    
+GA_estimates_flu_gt <- M_GA_gt%>%
+  gtsave(here("outputs/tables/suppl_data/models_with_GA_based_on_LMP", "M_GA_estimates_flu_or_syph_gt.html"))
+GA_estimates_flu_gt <- M_GA_gt%>%
+  gtsave(here("outputs/tables/suppl_data/models_with_GA_based_on_LMP", "M_GA_estimates_flu_or_syph_gt.docx"))
+```
+
+# Anthropometrics sex - Z-score and infections
+## Overall
+# stillbirth and GA
+```{r}
+sb_ga <- laus4 %>%
+  group_by(stillbirth, flu_or_syph) %>%
+  filter(!is.na(hc.perturbed) & !is.na(GA_weeks))%>%
+  summarise(mean(birthweight), sd(birthweight), 
+            mean(hc.perturbed), sd(hc.perturbed),
+            mean(GA_weeks), sd(hc.perturbed))
+sb_ga
+
+sb_ga1 <- laus4 %>%
+  group_by(stillbirth, flu_or_syph) %>%
+  filter(!is.na(hc.perturbed)& !is.na(GA_weeks))%>%
+  summarise(mean(birthweight), mean(hc.perturbed), mean(GA_weeks))
+sb_ga1
+```
+
+## Plot
+```{r}
+BW_GA_SB_inf <- sb_ga %>%
+ggplot(aes(x = `mean(GA_weeks)`, y = `mean(birthweight)`, 
+           color = stillbirth, shape=stillbirth)) +
+   geom_point(size=4) +
+  labs(x = "Gestational age (weeks)", y = "Birth weight (g)") +
+  scale_color_manual(values = c("livebirth" = "#009E73", "stillbirth" = "#D55E00")) +
+  scale_shape_manual(values = c("livebirth" = 19, "stillbirth" = 17)) +
+ scale_y_continuous(breaks=seq(1700,3300, by=200))+
+  scale_x_continuous(breaks=seq(33,40, by=1))+
+ coord_cartesian(xlim=c(33,40), ylim = c(1700,3300))+
+theme_minimal() +
+    geom_line(data = subset(sb_ga, flu_or_syph == "no"), 
+            aes(group = 1), 
+            linetype = "solid", colour="#56B4E9", linewidth=0.8) +
+   geom_line(data = subset(sb_ga, flu_or_syph == "influenza"), 
+            aes(group = 1), 
+            linetype = "solid", colour="#CC79A7", linewidth=0.8) +
+   geom_line(data = subset(sb_ga, flu_or_syph == "syphilis"), 
+            aes(group = 1), 
+            linetype = "solid", colour="#E69F00", linewidth=0.8)+
+    annotate("text",colour="#E69F00",x=34.8,y=2180,
+             label="syphilis")+
+    annotate("text",colour="#CC79A7",x=37,y=2670,
+             label="influenza")+
+    annotate("text",colour="#56B4E9",x=38.3,y=3100,
+             label="no disease")+
+  theme(legend.position="none")+
+  custom_theme()+
+  NULL
+BW_GA_SB_inf
+
+
+HC_GA_SB_inf <- sb_ga %>%
+ggplot(aes(x = `mean(GA_weeks)`, y = `mean(hc.perturbed)`, 
+           color = stillbirth, shape=stillbirth)) +
+   geom_point(size=4) +
+  scale_y_continuous(breaks=seq(27,35,by=1)) +
+  scale_x_continuous(breaks=seq(33,40,by=1)) +
+  coord_cartesian(xlim=c(33,40),ylim=c(27,35))+
+  labs(x = "Gestational age (weeks)", y = "Head circumference (cm)") +
+  scale_color_manual(values = c("livebirth" = "#009E73", "stillbirth" = "#D55E00")) +
+  scale_shape_manual(values=c("livebirth"=19, "stillbirth"=17))+
+   theme_minimal() +
+    geom_line(data = subset(sb_ga, flu_or_syph == "no"), 
+            aes(group = 1), 
+            linetype = "solid", colour="#56B4E9", linewidth=0.8) +
+   geom_line(data = subset(sb_ga, flu_or_syph == "influenza"), 
+            aes(group = 1), 
+            linetype = "solid", colour="#CC79A7", linewidth=0.8) +
+   geom_line(data = subset(sb_ga, flu_or_syph == "syphilis"), 
+            aes(group = 1), 
+            linetype = "solid", colour="#E69F00", linewidth=0.8) +
+    annotate("text",colour="#E69F00",x=35.2,y=30,
+             label="syphilis")+
+    annotate("text",colour="#CC79A7",x=37,y=32.2,
+             label="influenza")+
+    annotate("text",colour="#56B4E9",x=38.4,y=34.2,
+             label="no disease")+
+  custom_theme()+
+  NULL
+HC_GA_SB_inf
+
+
+BW_HC_GA_SB_inf <- egg::ggarrange(BW_GA_SB_inf, 
+          HC_GA_SB_inf,
+          labels = c("A", "B"),
+          ncol = 2, nrow = 1) 
+# ggsave("output/graphs/brain_sparing/infections_BW_HC_stillbirth_GA.pdf", BW_HC_GA_SB_inf, width = 16, height = 7, units = "in", device = "pdf")
+```
