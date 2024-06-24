@@ -27,11 +27,11 @@ dataZH_b     <- laus_vd_waves %>%
   mutate(Namex= paste0(Year,"/W",KW),
          DeathsInc = Deaths/PopCity*1000,
          InfluenzaInc= Influenza_Stadt/PopCity*1000,
-         HospInc = Total_Aufnahmen/PopCity*1000,
-         AndereInc = Andere_Infekt/PopCity*1000,
+         HospInc = Total_Aufnahmen/PopCanton*1000,
+         AndereInc = Andere_Infekt/PopCanton*1000,
          InfluenzaCantonInc = Influenza_Kanton/PopCanton*1000,
          HospInf = Total_Aufnahmen - Andere_Infekt,
-         HospInfInc =  HospInf/PopCity*1000 ) 
+         HospInfInc =  HospInf/PopCanton*1000 ) 
 
 
 
@@ -48,7 +48,6 @@ FigureInc <- ggplot() +
   ylab("per 1,000 inhab.")+
   ggtitle("A) Newly reported ILI cases in the Canton of Vaud") +
   geom_vline(xintercept = lims3, linetype="dashed")+
-  geom_vline(xintercept = lims4, linetype="solid")+
   annotate("rect",xmin=datlim1,xmax=datlim2,ymin=-Inf,ymax=Inf,alpha=0.1,fill="black") +
   annotate("rect",xmin=datlim3,xmax=datlim4,ymin=-Inf,ymax=Inf,alpha=0.1,fill="black") +
   theme_bw()+
@@ -76,7 +75,6 @@ FigureDeath <- ggplot() +
   xlab("Month/Year")+
   ylab("per 1,000 inhab.")+
   ggtitle("B) Deaths (all-cause) City of Lausanne") +
-  geom_vline(xintercept = lims4, linetype="solid")+
   annotate("rect",xmin=datlim1,xmax=datlim2,ymin=-Inf,ymax=Inf,alpha=0.1,fill="black") +
   annotate("rect",xmin=datlim3,xmax=datlim4,ymin=-Inf,ymax=Inf,alpha=0.1,fill="black") +
   theme_bw()+
@@ -101,9 +99,10 @@ FigureHospital <- ggplot() +
   scale_color_manual(name = "",
                      values = c(col_pal[2],col_pal[8]))+
   xlab("Month/Year")+
+  coord_cartesian(ylim=c(0,0.6))+
+  scale_y_continuous(breaks=seq(0,0.6, by=0.2))+xlab("Month/Year")+
   ylab("per 1,000 inhab.")+
   ggtitle("C) Hospitalisations in the Canton Vaud, due to infections (incl. influenza)") +
-  geom_vline(xintercept = lims4, linetype="solid")+
   annotate("rect",xmin=datlim1,xmax=datlim2,ymin=-Inf,ymax=Inf,alpha=0.1,fill="black") +
   annotate("rect",xmin=datlim3,xmax=datlim4,ymin=-Inf,ymax=Inf,alpha=0.1,fill="black") +
   theme_bw()+
@@ -116,9 +115,10 @@ FigureHospital <- ggplot() +
     title =element_text(size=title_size))
 FigureHospital
 
+
 plot_lausanne <- cowplot::plot_grid(FigureInc,FigureDeath,FigureHospital, 
                                   ncol=1, nrow=3, align="hv",
                                   rel_heights = c(1,1,1))
 
 plot_lausanne
-cowplot::save_plot("Vaud_ILI_Deaths_Lausanne_hospit_Vaud.pdf", plot_lausanne , path=here("output/graphs/suppl_data"), base_height=15,base_width=20)
+cowplot::save_plot("Vaud_ILI_Deaths_Lausanne_hospit_Vaud.pdf", plot_lausanne , path=here("outputs/graphs/suppl_data"), base_height=15,base_width=20)
